@@ -467,7 +467,12 @@ _papplSystemWebAddPrinter(
           _papplRWUnlock(printer);
 
 	  // Redirect the client to the printer's status page...
+      // when i add printer then the uri is ---> The printer->uriname is --- /aaftab
+
+        printf("The printer->uriname is --- %s\n", printer->uriname);
+
           papplClientRespondRedirect(client, HTTP_STATUS_FOUND, printer->uriname);
+        
           cupsFreeOptions(num_form, form);
           return;
 	}
@@ -493,13 +498,15 @@ _papplSystemWebAddPrinter(
     cupsFreeOptions(num_form, form);
   }
 
-  system_header(client, _PAPPL_LOC("Add Printer"));
+  system_header(client, _PAPPL_LOC("Add Data"));
 
   if (status)
     papplClientHTMLPrintf(client, "<div class=\"banner\">%s</div>\n", papplClientGetLocString(client, status));
 
   papplClientHTMLStartForm(client, client->uri, false);
 
+
+  // edit text field ...
   papplClientHTMLPrintf(client,
 			"          <table class=\"form\">\n"
 			"            <tbody>\n"
@@ -524,6 +531,9 @@ _papplSystemWebAddPrinter(
   for (i = 0; i < system->num_drivers; i ++)
     papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", system->drivers[i].name, !strcmp(system->drivers[i].name, driver_name) ? " selected" : "", papplClientGetLocString(client, system->drivers[i].description));
 
+
+
+  // this is the last where we are navigating to another page ....
   papplClientHTMLPrintf(client,
 		        "</select></td></tr>\n"
 		        "             <tr><th></th><td><input type=\"submit\" value=\"%s\"></td></tr>\n"
@@ -539,7 +549,7 @@ _papplSystemWebAddPrinter(
 		        "  }\n"
 		        "}</script>\n"
 		        "         </div>\n"
-		        "       </div>\n", papplClientGetLocString(client, _PAPPL_LOC("Add Printer")));
+		        "       </div>\n", papplClientGetLocString(client, _PAPPL_LOC("Add data by ankit")));
 
   system_footer(client);
 }
@@ -676,6 +686,8 @@ _papplSystemWebHome(
 {
   system_header(client, NULL);
 
+
+  //left half for showing configurations...
   papplClientHTMLPrintf(client,
 			"      <div class=\"row\">\n"
 			"        <div class=\"col-6\">\n"
@@ -687,13 +699,16 @@ _papplSystemWebHome(
 
   _papplSystemWebSettings(client);
 
+  // right half for showing printers ...
   papplClientHTMLPrintf(client,
 		        "        </div>\n"
                         "        <div class=\"col-6\">\n"
-                        "          <h1 class=\"title\">%s</h1>\n", papplClientGetLocString(client, _PAPPL_LOC("Printers")));
+                        "          <h1 class=\"title\">%s</h1>\n", papplClientGetLocString(client, _PAPPL_LOC("Data")));
 
   _papplClientHTMLPutLinks(client, system->links, PAPPL_LOPTIONS_PRINTER);
 
+
+  // the below will represent all the printers...
   papplSystemIteratePrinters(system, (pappl_printer_cb_t)_papplPrinterWebIteratorCallback, client);
 
   papplClientHTMLPuts(client,
@@ -2340,19 +2355,25 @@ tls_install_certificate(
   else
     papplCopyString(basedir, CUPS_SERVERROOT, sizeof(basedir));
 
-  // Make "~/.cups" or "CUPS_SERVERROOT" directory...
-  if (mkdir(basedir, 0755) && errno != EEXIST)
+  if (access(basedir, X_OK))
   {
-    papplLogClient(client, PAPPL_LOGLEVEL_ERROR, "Unable to create directory '%s': %s", basedir, strerror(errno));
-    return (false);
+    // Make "~/.cups" or "CUPS_SERVERROOT" directory...
+    if (mkdir(basedir, 0755))
+    {
+      papplLogClient(client, PAPPL_LOGLEVEL_ERROR, "Unable to create directory '%s': %s", basedir, strerror(errno));
+      return (false);
+    }
   }
 
-  // Make "~/.cups/ssl" or "CUPS_SERVERROOT/ssl" directory...
   snprintf(ssldir, sizeof(ssldir), "%s/ssl", basedir);
-  if (mkdir(ssldir, 0755) && errno != EEXIST)
+  if (access(ssldir, X_OK))
   {
-    papplLogClient(client, PAPPL_LOGLEVEL_ERROR, "Unable to create directory '%s': %s", ssldir, strerror(errno));
-    return (false);
+    // Make "~/.cups/ssl" or "CUPS_SERVERROOT/ssl" directory...
+    if (mkdir(ssldir, 0755))
+    {
+      papplLogClient(client, PAPPL_LOGLEVEL_ERROR, "Unable to create directory '%s': %s", ssldir, strerror(errno));
+      return (false);
+    }
   }
 
   snprintf(dstkey, sizeof(dstkey), "%s/%s.key", ssldir, papplSystemGetHostName(system, hostname, sizeof(hostname)));
@@ -2562,19 +2583,25 @@ tls_make_certificate(
   else
     papplCopyString(basedir, CUPS_SERVERROOT, sizeof(basedir));
 
-  // Make "~/.cups" or "CUPS_SERVERROOT" directory...
-  if (mkdir(basedir, 0755) && errno != EEXIST)
+  if (access(basedir, X_OK))
   {
-    papplLogClient(client, PAPPL_LOGLEVEL_ERROR, "Unable to create directory '%s': %s", basedir, strerror(errno));
-    return (false);
+    // Make "~/.cups" or "CUPS_SERVERROOT" directory...
+    if (mkdir(basedir, 0755))
+    {
+      papplLogClient(client, PAPPL_LOGLEVEL_ERROR, "Unable to create directory '%s': %s", basedir, strerror(errno));
+      return (false);
+    }
   }
 
-  // Make "~/.cups/ssl" or "CUPS_SERVERROOT/ssl" directory...
   snprintf(ssldir, sizeof(ssldir), "%s/ssl", basedir);
-  if (mkdir(ssldir, 0755) && errno != EEXIST)
+  if (access(ssldir, X_OK))
   {
-    papplLogClient(client, PAPPL_LOGLEVEL_ERROR, "Unable to create directory '%s': %s", ssldir, strerror(errno));
-    return (false);
+    // Make "~/.cups/ssl" or "CUPS_SERVERROOT/ssl" directory...
+    if (mkdir(ssldir, 0755))
+    {
+      papplLogClient(client, PAPPL_LOGLEVEL_ERROR, "Unable to create directory '%s': %s", ssldir, strerror(errno));
+      return (false);
+    }
   }
 
   snprintf(keyfile, sizeof(keyfile), "%s/%s.key", ssldir, hostname);

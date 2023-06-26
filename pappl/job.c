@@ -461,10 +461,22 @@ papplJobOpenFile(
   if (!directory)
     directory = job->system->directory;
 
-  if (mkdir(directory, 0777) && errno != EEXIST)
+  if (access(directory, X_OK))
   {
-    papplLogJob(job, PAPPL_LOGLEVEL_FATAL, "Unable to create spool directory '%s': %s", directory, strerror(errno));
-    return (-1);
+    if (errno == ENOENT)
+    {
+      // Spool directory does not exist, might have been deleted...
+      if (mkdir(directory, 0777))
+      {
+        papplLogJob(job, PAPPL_LOGLEVEL_FATAL, "Unable to create spool directory '%s': %s", directory, strerror(errno));
+        return (-1);
+      }
+    }
+    else
+    {
+      papplLogJob(job, PAPPL_LOGLEVEL_FATAL, "Unable to access spool directory '%s': %s", directory, strerror(errno));
+      return (-1);
+    }
   }
 
   // Make a name from the job-name attribute...
@@ -512,6 +524,10 @@ papplJobOpenFile(
 
   // Create a filename with the job-id, job-name, and document-format (extension)...
   snprintf(fname, fnamesize, "%s/p%05dj%09d-%s.%s", directory, job->printer->printer_id, job->job_id, name, ext);
+
+  printf(" the below one is what i am looking for **** \n");
+    printf(fname, fnamesize, "%s/p%05dj%09d-%s.%s", directory, job->printer->printer_id, job->job_id, name, ext);
+
 
   if (!strcmp(mode, "r"))
     return (open(fname, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_BINARY));

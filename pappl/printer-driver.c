@@ -55,12 +55,12 @@ papplPrinterGetDriverAttributes(
 }
 
 
-//
+
 // 'papplPrinterGetDriverData()' - Get the current print driver data.
-//
+
 // This function copies the current print driver data, defaults, and ready
 // (loaded) media information into the specified buffer.
-//
+
 
 pappl_pr_driver_data_t *		// O - Driver data or `NULL` if none
 papplPrinterGetDriverData(
@@ -79,6 +79,10 @@ papplPrinterGetDriverData(
 
   return (data);
 }
+
+
+
+
 
 
 //

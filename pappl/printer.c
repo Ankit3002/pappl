@@ -1,7 +1,7 @@
 //
 // Printer object for the Printer Application Framework
 //
-// Copyright © 2019-2023 by Michael R Sweet.
+// Copyright © 2019-2022 by Michael R Sweet.
 // Copyright © 2010-2019 by Apple Inc.
 //
 // Licensed under Apache License v2.0.  See the file "LICENSE" for more
@@ -13,6 +13,7 @@
 //
 
 #include "pappl-private.h"
+#include <stdio.h>
 
 
 //
@@ -69,6 +70,367 @@ papplPrinterCancelAllJobs(
     printer->system->clean_time = time(NULL) + 60;
 }
 
+// api for creating preset in the printer ...
+static char *				// O  - Line or `NULL` on EOF
+read_line(cups_file_t *fp,		// I  - File
+          char        *line,		// I  - Line buffer
+          size_t      linesize,		// I  - Size of line buffer
+          char        **value,		// O  - Value portion of line
+          int         *linenum)		// IO - Current line number
+{
+  char	*ptr;				// Pointer into line
+
+
+  // Try reading a line from the file...
+  *value = NULL;
+
+  if (!cupsFileGets(fp, line, linesize))
+    return (NULL);
+
+  // Got it, bump the line number...
+  (*linenum) ++;
+
+  // If we have "something value" then split at the whitespace...
+  if ((ptr = strchr(line, ' ')) != NULL)
+  {
+    *ptr++ = '\0';
+    *value = ptr;
+  }
+
+  // Strip the trailing ">" for "<something value(s)>"
+  if (line[0] == '<' && *value && (ptr = *value + strlen(*value) - 1) >= *value && *ptr == '>')
+    *ptr = '\0';
+
+  return (line);
+}
+
+// this api is used to convert file descriptor 
+// into cups_file_t descriptor...
+
+cups_file_t *
+papplFileOpenFd(
+              const char *mode,
+              int fd)
+{
+  cups_file_t *fp;
+  if ((fp = cupsFileOpenFd(fd, mode)) == NULL)
+  {
+    if (*mode == 's')
+      httpAddrClose(NULL, fd);
+    else
+      close(fd);
+  }
+  return (fp);
+}
+
+// this api is used to add preset of a particular printer ...
+
+
+void
+papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
+{
+
+      /// for doing printer validation ...
+      const char	*printer_id,	// Printer ID
+			*printer_name,	// Printer name
+			*device_id,	// Device ID
+			*device_uri,	// Device URI
+			*driver_name;	// Driver name
+
+
+      //variables ..
+      int i;
+      int fp;
+      int linenum;
+      char line[2048];
+      char *ptr;
+      char *value;
+
+  //create file descriptor for cups_file_t.....
+  cups_file_t *fd;
+
+  char filename[1024];
+   
+  fp = papplPrinterOpenFile(printer,filename, sizeof(filename), "/home/ankit/Documents", "preset_option", "txt", "r");
+  linenum = 0;
+
+  fd = papplFileOpenFd("r", fp);
+
+  printf("\nthe value of file descriptor is --- %d\n", fp);
+  
+
+  while(read_line(fd, line , sizeof(line), &value, &linenum))
+  {
+
+    if(!strcasecmp(line , "<Printer") && value)
+    {
+
+      cups_len_t	num_options;	// Number of options
+      cups_option_t	*options = NULL;// Options
+
+      if ((num_options = cupsParseOptions(value, 0, &options)) != 5 || (printer_id = cupsGetOption("id", num_options, options)) == NULL || strtol(printer_id, NULL, 10) <= 0 || (printer_name = cupsGetOption("name", num_options, options)) == NULL || (device_id = cupsGetOption("did", num_options, options)) == NULL || (device_uri = cupsGetOption("uri", num_options, options)) == NULL || (driver_name = cupsGetOption("driver", num_options, options)) == NULL)
+      {
+        printf("The definition written in the file for printer tag is incorrect\n");
+      }
+
+      // // you got those values ...
+      if(!strcasecmp(printer_name, printer->name) 
+        && !strcasecmp(device_uri, printer->device_uri)
+        && !strcasecmp(driver_name, printer->driver_name))
+        {
+
+          printf("--------------------you get the right printer buddy---------*******-------\n");
+
+            
+          while (read_line(fd, line, sizeof(line), &value, &linenum))
+          {
+            
+            if(!strcasecmp(line , "<Preset") && value)
+            {
+              // Read a preset ...
+              const char *preset_name,
+              *preset_id;
+
+              pappl_pr_preset_data_t *preset; // current preset
+                // Allocate memory for the printer...
+              if ((preset = calloc(1, sizeof(pappl_pr_preset_data_t))) == NULL)
+              {
+                printf("Allocate memory for preset fails ... \n");
+              }
+                      
+              if ((num_options = cupsParseOptions(value, 0, &options)) != 2 || (preset_id= cupsGetOption("id", num_options, options)) == NULL || strtol(preset_id, NULL, 10) <= 0 || (preset_name = cupsGetOption("name", num_options, options)) == NULL )
+              {
+                printf("the preset definition is incorrect \n");
+                // papplLog(system, PAPPL_LOGLEVEL_ERROR, "Bad preset definition on line %d of '%s'.", linenum, filename);
+                break;
+              }
+
+              preset->name = preset_name;
+
+              while (read_line(fd, line, sizeof(line), &value, &linenum))
+              {
+                if(!strcasecmp(line, "</Preset"))
+                  break;
+
+        // here set the values of preset to printer object ...
+        else if (!strcasecmp(line, "identify-actions-default"))
+          preset->identify_default = _papplIdentifyActionsValue(value);
+        else if (!strcasecmp(line, "label-mode-configured"))
+          preset->mode_configured = _papplLabelModeValue(value);
+        else if (!strcasecmp(line, "label-tear-offset-configured") && value)
+          preset->tear_offset_configured = (int)strtol(value, NULL, 10);
+        else if (!strcasecmp(line, "media-col-default"))
+          parse_media_col(value, &preset->media_default);
+        else if (!strncasecmp(line, "media-col-ready", 15))
+        {
+          if ((i = (int)strtol(line + 15, NULL, 10)) >= 0 && i < PAPPL_MAX_SOURCE)
+            parse_media_col(value, preset->media_ready + i);
+        }
+        else if (!strcasecmp(line, "orientation-requested-default"))
+          preset->orient_default = (ipp_orient_t)ippEnumValue("orientation-requested", value);
+        else if (!strcasecmp(line, "output-bin-default") && value)
+        {
+          for (i = 0; i < preset->num_bin; i ++)
+          {
+            if (!strcmp(value, preset->bin[i]))
+            {
+              preset->bin_default = i;
+              break;
+            }
+          }
+        }
+        else if (!strcasecmp(line, "print-color-mode-default"))
+          preset->color_default = _papplColorModeValue(value);
+        else if (!strcasecmp(line, "print-content-optimize-default"))
+          preset->content_default = _papplContentValue(value);
+        else if (!strcasecmp(line, "print-darkness-default") && value)
+          preset->darkness_default = (int)strtol(value, NULL, 10);
+        else if (!strcasecmp(line, "print-quality-default"))
+          preset->quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
+        else if (!strcasecmp(line, "print-scaling-default"))
+          preset->scaling_default = _papplScalingValue(value);
+        else if (!strcasecmp(line, "print-speed-default") && value)
+          preset->speed_default = (int)strtol(value, NULL, 10);
+        else if (!strcasecmp(line, "printer-darkness-configured") && value)
+          preset->darkness_configured = (int)strtol(value, NULL, 10);
+        else if (!strcasecmp(line, "printer-resolution-default") && value)
+          sscanf(value, "%dx%ddpi", &preset->x_default, &preset->y_default);
+        else if (!strcasecmp(line, "sides-default"))
+          preset->sides_default = _papplSidesValue(value);
+
+
+        // now set vendor attributes ...
+        else if ((ptr = strstr(line, "-default")) != NULL)
+        {
+          char	defname[128],		// xxx-default name
+	      	supname[128];		// xxx-supported name
+	  ipp_attribute_t *attr;	// Attribute
+
+          *ptr = '\0';
+
+          snprintf(defname, sizeof(defname), "%s-default", line);
+          snprintf(supname, sizeof(supname), "%s-supported", line);
+
+          if (!value)
+            value = ptr;
+
+	  ippDeleteAttribute(preset->vendor_attrs, ippFindAttribute(preset->vendor_attrs, defname, IPP_TAG_ZERO));
+
+          if ((attr = ippFindAttribute(preset->vendor_attrs, supname, IPP_TAG_ZERO)) != NULL)
+          {
+            switch (ippGetValueTag(attr))
+            {
+              case IPP_TAG_BOOLEAN :
+                  ippAddBoolean(preset->vendor_attrs, IPP_TAG_PRINTER, defname, !strcmp(value, "true"));
+                  break;
+
+              case IPP_TAG_INTEGER :
+              case IPP_TAG_RANGE :
+                  ippAddInteger(preset->vendor_attrs, IPP_TAG_PRINTER, IPP_TAG_INTEGER, defname, (int)strtol(value, NULL, 10));
+                  break;
+
+              case IPP_TAG_KEYWORD :
+		  ippAddString(preset->vendor_attrs, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, defname, NULL, value);
+                  break;
+
+              default :
+                  break;
+            }
+	  }
+          else
+          {
+            ippAddString(preset->vendor_attrs, IPP_TAG_PRINTER, IPP_TAG_TEXT, defname, NULL, value);
+          }
+        }
+
+                // now add this preset into the printer object that you have created...
+                // int added_or_not =  cupsArrayAdd(printer->presets , preset) ;
+
+                // Add the preset to the printer...
+                _papplSystemAddPreset(system , printer, preset);
+
+              //    _papplRWLockWrite(system);
+
+              // if (!printer->presets)
+              //     printer->presets = cupsArrayNew3(NULL, NULL, NULL, 0, NULL, NULL);
+
+              // cupsArrayAdd(printer->presets, preset);
+
+              // _papplRWUnlock(system);
+
+              // _papplSystemConfigChanged(system);
+
+                // printf("^^^^^^^^^^^^^^the value of added or not is --- %d\n", added_or_not);
+
+
+                  printf("****************** -------------the number of presets created are --- %d\n", cupsArrayCount(printer->presets));
+
+          
+              }
+
+              // now you have the preset ... 
+              // call the method which will 
+
+              
+            }
+          }
+
+
+
+        }
+        else
+        {
+          printf("No chance !\n");
+        }
+
+
+    }
+    // linenum++;
+    if(!strcasecmp(line, "</Printer>"))
+    {
+      break;
+    }
+
+  }
+  
+
+  close(fp);
+
+}
+
+
+//
+// 'parse_media_col()' - Parse a media-col value.
+//
+
+ void
+parse_media_col(
+    char              *value,		// I - Value
+    pappl_media_col_t *media)		// O - Media collection
+{
+  cups_len_t	i,			// Looping var
+		num_options;		// Number of options
+  cups_option_t	*options = NULL,	// Options
+		*option;		// Current option
+
+
+  memset(media, 0, sizeof(pappl_media_col_t));
+  num_options = cupsParseOptions(value, 0, &options);
+
+  for (i = num_options, option = options; i > 0; i --, option ++)
+  {
+    if (!strcasecmp(option->name, "bottom"))
+      media->bottom_margin = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "left"))
+      media->left_margin = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "left-offset"))
+      media->left_offset = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "right"))
+      media->right_margin = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "name"))
+      papplCopyString(media->size_name, option->value, sizeof(media->size_name));
+    else if (!strcasecmp(option->name, "width"))
+      media->size_width = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "length"))
+      media->size_length = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "source"))
+      papplCopyString(media->source, option->value, sizeof(media->source));
+    else if (!strcasecmp(option->name, "top"))
+      media->top_margin = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "offset") || !strcasecmp(option->name, "top-offset"))
+      media->top_offset = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "tracking"))
+      media->tracking = _papplMediaTrackingValue(option->value);
+    else if (!strcasecmp(option->name, "type"))
+      papplCopyString(media->type, option->value, sizeof(media->type));
+  }
+
+  cupsFreeOptions(num_options, options);
+}
+
+// api for adding presets...
+
+void _papplSystemAddPreset(
+    pappl_system_t          *system,    // I - System
+    pappl_printer_t         *printer,   // I - Printer
+    pappl_pr_preset_data_t  *preset)    // I - Preset
+{
+    // Add the preset to the printer...
+    _papplRWLockWrite(system);
+
+    if (!printer->presets)
+        printer->presets = cupsArrayNew3(NULL, NULL, NULL, 0, NULL, NULL);
+
+    cupsArrayAdd(printer->presets, preset);
+
+    _papplRWUnlock(system);
+
+    _papplSystemConfigChanged(system);
+    // papplSystemAddEvent(system, printer, NULL, PAPPL_EVENT_PRINTER_PRESET_CREATED | PAPPL_EVENT_SYSTEM_CONFIG_CHANGED, NULL);
+}
+
+
+
 
 //
 // 'papplPrinterCreate()' - Create a new printer.
@@ -108,6 +470,7 @@ papplPrinterCreate(
     const char           *device_id,	// I - IEEE-1284 device ID
     const char           *device_uri)	// I - Device URI
 {
+  printf("papplPrinterCreate is called to create the printer in the system object .. \n");
   pappl_printer_t	*printer;	// Printer
   char			resource[1024],	// Resource path
 			*resptr,	// Pointer into resource path
@@ -390,7 +753,7 @@ papplPrinterCreate(
     {
       pappl_device_t	*device;	// Connection to printer
 
-//      papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Opening device for auto-setup.");
+      papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Opening device for auto-setup.");
       if ((device = papplDeviceOpen(device_uri, "auto", papplLogDevice, system)) != NULL)
       {
         char	new_id[1024];		// New 1284 device ID
@@ -398,7 +761,7 @@ papplPrinterCreate(
         if (papplDeviceGetID(device, new_id, sizeof(new_id)))
           printer->device_id = strdup(new_id);
 
-//        papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Closing device for auto-setup.");
+        papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Closing device for auto-setup.");
 
         papplDeviceClose(device);
       }
@@ -413,7 +776,7 @@ papplPrinterCreate(
   }
 
   // Add static attributes...
-
+    
   // charset-configured
   ippAddString(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_CHARSET), "charset-configured", NULL, "utf-8");
 
@@ -565,8 +928,14 @@ papplPrinterCreate(
   papplPrinterSetDriverData(printer, &driver_data, driver_attrs);
   ippDelete(driver_attrs);
 
+  // here call the api to fetch presets from file...
+    // papplPresetAdd(printer);
+
   // Add the printer to the system...
   _papplSystemAddPrinter(system, printer, printer_id);
+
+
+      
 
   // Do any post-creation work...
   if (system->create_cb)
@@ -628,6 +997,27 @@ papplPrinterCreate(
     snprintf(path, sizeof(path), "%s/media", printer->uriname);
     papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterWebMedia, printer);
     papplPrinterAddLink(printer, _PAPPL_LOC("Media"), path, PAPPL_LOPTIONS_NAVIGATION | PAPPL_LOPTIONS_STATUS);
+
+// ---------------------------------------------//
+
+    // add resource for creating and listing preset page page ...
+    // it must have a button with printing defaults...
+    
+    snprintf(path, sizeof(path), "%s/presets", printer->uriname);
+    // this add the content 
+    papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPreset, printer);
+    // this add button link...
+    printf("The Uri added to create (listing and create page ) at  %s\n", path);  // path value --- /ll/presets
+    papplPrinterAddLink(printer, _PAPPL_LOC("Presets"), path, PAPPL_LOPTIONS_NAVIGATION | PAPPL_LOPTIONS_STATUS);
+
+    
+    // add saving preset page ...
+    snprintf(path, sizeof(path), "%s/presets/create", printer->uriname);
+    // this add the content 
+    papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, printer);
+
+  
+// ----------------------------------------------//
 
     snprintf(path, sizeof(path), "%s/printing", printer->uriname);
     papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterWebDefaults, printer);
@@ -725,6 +1115,8 @@ _papplPrinterDelete(
   free(printer->device_uri);
   free(printer->driver_name);
   free(printer->usb_storage);
+  // here i am deleting the elements of preset array ....
+  cupsArrayDelete(printer->presets);
 
   ippDelete(printer->driver_attrs);
   ippDelete(printer->attrs);
@@ -796,6 +1188,10 @@ papplPrinterOpenFile(
   char	name[64],			// "Safe" filename
 	*nameptr;			// Pointer into filename
 
+  // printf("papplPrinterOpenFile is called \n");
+  printf("    \n");
+  printf("papplPrinterOpenFile , the directory inside printer->system->directory -- -- %s\n",printer->system->directory);
+
 
   // Range check input...
   if (!printer || !fname || fnamesize < 256 || !resname || !mode)
@@ -810,15 +1206,28 @@ papplPrinterOpenFile(
   if (!directory)
     directory = printer->system->directory;
 
-  if (mkdir(directory, 0777) && errno != EEXIST)
+  if (access(directory, X_OK))
   {
-    papplLogPrinter(printer, PAPPL_LOGLEVEL_FATAL, "Unable to create spool directory '%s': %s", directory, strerror(errno));
-    return (-1);
+    if (errno == ENOENT)
+    {
+      // Spool directory does not exist, might have been deleted...
+      if (mkdir(directory, 0777))
+      {
+        papplLogPrinter(printer, PAPPL_LOGLEVEL_FATAL, "Unable to create spool directory '%s': %s", directory, strerror(errno));
+        return (-1);
+      }
+    }
+    else
+    {
+      papplLogPrinter(printer, PAPPL_LOGLEVEL_FATAL, "Unable to access spool directory '%s': %s", directory, strerror(errno));
+      return (-1);
+    }
   }
 
   // Make a name from the resource name argument...
   for (nameptr = name; *resname && nameptr < (name + sizeof(name) - 1); resname ++)
   {
+      // printf(" we are not creating the file ,...\n");
     if (isalnum(*resname & 255) || *resname == '-' || *resname == '.')
     {
       *nameptr++ = (char)tolower(*resname & 255);
@@ -831,17 +1240,39 @@ papplPrinterOpenFile(
         resname ++;
     }
   }
+  printf("    \n");
+  printf("papplPrinterOpenFile created the file whose name is  -- %s\n", resname);
 
   *nameptr = '\0';
 
+
   // Create a filename...
   if (ext)
+  {
+
     snprintf(fname, fnamesize, "%s/p%05d-%s.%s", directory, printer->printer_id, name, ext);
+
+    printf(" if block get executed ...   \n");
+    printf(fname, fnamesize, "---- %s/p%05d-%s.%s\n", directory, printer->printer_id, name, ext);
+  }
+    
   else
+  {
     snprintf(fname, fnamesize, "%s/p%05d-%s", directory, printer->printer_id, name);
+printf("  else block get executed ...  \n");
+    printf(fname, fnamesize, "----%s/p%05d-%s\n", directory, printer->printer_id, name);
+  }
+
 
   if (!strcmp(mode, "r"))
-    return (open(fname, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_BINARY));
+  {
+    printf("the 'r' checking is working properly.... \n ");
+    printf("the value of fname variable is ---- %s\n", fname);
+    int something = (open(fname, O_RDONLY | O_NOFOLLOW | O_CLOEXEC | O_BINARY));
+    printf("the value of something variable introduced is -- %d\n", something);
+    return something;
+
+  }
   else if (!strcmp(mode, "w"))
     return (open(fname, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW | O_CLOEXEC | O_BINARY, 0600));
   else if (!strcmp(mode, "x"))

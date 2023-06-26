@@ -34,6 +34,9 @@ _papplSystemAddPrinter(
   // Add the printer to the system...
   _papplRWLockWrite(system);
 
+
+  // the printer id that we read from file ... is added over here...
+
   if (printer_id)
     printer->printer_id = printer_id;
   else
@@ -90,7 +93,9 @@ papplSystemCreatePrinters(
 
     // Then try creating the printer...
     if ((printer = papplPrinterCreate(system, 0, d->device_info, "auto", d->device_id, d->device_uri)) == NULL)
-      continue;			// Printer with this name exists
+      {
+        printf("I think this is called \n");
+        continue;	}		// Printer with this name exists
 
     // Register the DNS-SD service...
     _papplRWLockRead(printer->system);
@@ -165,6 +170,14 @@ papplSystemFindPrinter(
     printer = NULL;
 
   _papplRWUnlock(system);
+
+  if (!printer)
+  {
+    if (resource)
+      papplLog(system, PAPPL_LOGLEVEL_DEBUG, "Unable to find printer at '%s'.", resource);
+    else
+      papplLog(system, PAPPL_LOGLEVEL_DEBUG, "Unable to find printer with printer-id='%d'.", printer_id);
+  }
 
   return (printer);
 }

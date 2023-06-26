@@ -418,6 +418,7 @@ papplSystemRun(pappl_system_t *system)	// I - System
     return;
   }
 
+  printf("\npapplSystemRun is called and the number of client listeners are --  %d\n" , system->num_listeners);
   if (system->num_listeners == 0)
   {
     papplLog(system, PAPPL_LOGLEVEL_FATAL, "Tried to run system without listeners.");
@@ -444,12 +445,24 @@ papplSystemRun(pappl_system_t *system)	// I - System
   {
     if (system->options & PAPPL_SOPTIONS_MULTI_QUEUE)
     {
+      // here we put home page of pappl which works on localhost : 8000...
       papplSystemAddResourceCallback(system, "/", "text/html", (pappl_resource_cb_t)_papplSystemWebHome, system);
+      
+      // here we add /addprinter link ...
       papplSystemAddResourceCallback(system, "/addprinter", "text/html", (pappl_resource_cb_t)_papplSystemWebAddPrinter, system);
-      papplSystemAddLink(system, _PAPPL_LOC("Add Printer"), "/addprinter", PAPPL_LOPTIONS_PRINTER | PAPPL_LOPTIONS_HTTPS_REQUIRED);
+      papplSystemAddLink(system, _PAPPL_LOC("Add Data "), "/addprinter", PAPPL_LOPTIONS_PRINTER | PAPPL_LOPTIONS_HTTPS_REQUIRED);
     }
+
+    
+
+    // below one's I don't care ...
     if (system->options & PAPPL_SOPTIONS_MULTI_QUEUE)
+    {
       papplSystemAddResourceCallback(system, "/config", "text/html", (pappl_resource_cb_t)_papplSystemWebConfig, system);
+
+    }
+
+
     if (system->options & PAPPL_SOPTIONS_WEB_NETWORK)
     {
       papplSystemAddResourceCallback(system, "/network", "text/html", (pappl_resource_cb_t)_papplSystemWebNetwork, system);
@@ -483,6 +496,8 @@ papplSystemRun(pappl_system_t *system)	// I - System
   signal(SIGINT, sigterm_handler);
   signal(SIGHUP, sighup_handler);
 #endif // !_WIN32
+
+
 
   // Set the server header...
   free(system->server_header);
@@ -528,10 +543,40 @@ papplSystemRun(pappl_system_t *system)	// I - System
   if (system->dns_sd_name)
     _papplSystemRegisterDNSSDNoLock(system);
 
+
+
   // Start up printers...
   for (i = 0, count = cupsArrayGetCount(system->printers); i < count; i ++)
   {
+
+    // printf("\nI am in the loop \n");
+
     printer = (pappl_printer_t *)cupsArrayGetElement(system->printers, i);
+
+
+//   // my changes ....
+//     pappl_system_t system_check = papplPrinterGetSystem(printer);
+//     pappl_pr_driver_data_t driver_data;
+//     pr_driver_extension_t  *extension;
+//  papplPrinterGetDriverData(printer, &driver_data);
+//   extension = (pr_driver_extension_t *)driver_data.extension;
+
+    // char buf_me[1024];
+    // int  file_descriptor;
+    //     // printf("I am not able to run it \n");
+    // file_descriptor = papplPrinterOpenFile(printer,buf_me,sizeof(buf_me),NULL,"ankit_opt","configuration_by_me","r" );
+
+    // int reading_variable;
+    // if(file_descriptor > 0)
+    // {
+    //   reading_variable = read(file_descriptor,buf_me, sizeof(buf_me) -1 );
+    //   printf("\nthe contents of file are --%s\n", buf_me);
+    //   close(file_descriptor);
+
+      
+    // }
+
+
 
     // Advertise via DNS-SD as needed...
     if (printer->dns_sd_name)
@@ -561,6 +606,11 @@ papplSystemRun(pappl_system_t *system)	// I - System
       papplLogPrinter(printer, PAPPL_LOGLEVEL_ERROR, "Unable to create USB gadget thread: %s", strerror(errno));
     }
   }
+
+
+
+
+printf("Now we are looping after all \n");
 
   // Loop until we are shutdown or have a hard error...
   for (;;)

@@ -1,7 +1,7 @@
 //
 // Main test suite file for the Printer Application Framework
 //
-// Copyright © 2020-2023 by Michael R Sweet.
+// Copyright © 2020-2022 by Michael R Sweet.
 //
 // Licensed under Apache License v2.0.  See the file "LICENSE" for more
 // information.
@@ -681,7 +681,8 @@ main(int  argc,				// I - Number of command-line arguments
   papplSystemSetVersions(system, (int)(sizeof(versions) / sizeof(versions[0])), versions);
   papplSystemAddStringsData(system, "/en.strings", "en", "\"/\" = \"This is a localized header for the system home page.\";\n\"/network\" = \"This is a localized header for the network configuration page.\";\n\"/printing\" = \"This is a localized header for all printing defaults pages.\";\n\"/Label_Printer/printing\" = \"This is a localized header for the label printer defaults page.\";\n");
 
-  mkdir(outdir, 0777);
+  if (access(outdir, 0))
+    mkdir(outdir, 0777);
 
   httpAssembleURIf(HTTP_URI_CODING_ALL, device_uri, sizeof(device_uri), "file", NULL, NULL, 0, "%s?ext=pwg", realpath(outdir, outdirname));
 
@@ -757,6 +758,22 @@ main(int  argc,				// I - Number of command-line arguments
       return (1);
     }
   }
+
+
+
+      // papplMainloop(argc, argv,      // Command line arguments
+		  //     "2.0", // Version number
+		  //     NULL,            // HTML Footer for web interface
+		  //     0,               // Number of drivers for built-in setup
+		  //     NULL,            // Driver list for built-in setup
+		  //     NULL,            // Printer auto-addition callback
+		  //                      // (will be set later)
+		  //     NULL,            // Setup callback for selected driver
+		  //     NULL,            // Sub-command name
+		  //     NULL,            // Callback for sub-command
+		  //     NULL,     // System creation callback
+		  //     NULL,            // Usage info output callback
+		  //     NULL); 
 
   // Run the system...
 #ifdef __APPLE__ // TODO: Implement private/public API for running with UI

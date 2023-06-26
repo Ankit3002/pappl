@@ -12,7 +12,7 @@
 //
 
 #include "pappl-private.h"
-
+#include <stdio.h>
 
 //
 // Local functions...
@@ -49,6 +49,10 @@ papplSystemLoadState(
     pappl_system_t *system,		// I - System
     const char     *filename)		// I - File to load
 {
+
+  printf("papplSystemLoadState is called  --- to fetch the data from the state file ...\n");
+  
+  
   int			i;		// Looping var
   cups_file_t		*fp;		// Output file
   int			linenum;	// Line number
@@ -68,6 +72,8 @@ papplSystemLoadState(
     return (false);
   }
 
+  printf("the filename of legacy-printer-app statefile is ------- %s\n", filename);
+
   // Open the state file...
   if ((fp = cupsFileOpen(filename, "r")) == NULL)
   {
@@ -83,6 +89,8 @@ papplSystemLoadState(
   linenum = 0;
   while (read_line(fp, line, sizeof(line), &value, &linenum))
   {
+
+    // read printer application sutff ....
     if (!strcasecmp(line, "DNSSDName"))
       papplSystemSetDNSSDName(system, value);
     else if (!strcasecmp(line, "Location"))
@@ -127,6 +135,9 @@ papplSystemLoadState(
         return (false);
       }
     }
+    /// till above we have stuff written which describe printer application ...
+
+    /// here we read the details from the printer .... 
     else if (!strcasecmp(line, "<Printer") && value)
     {
       // Read a printer...
@@ -137,104 +148,163 @@ papplSystemLoadState(
 			*device_id,	// Device ID
 			*device_uri,	// Device URI
 			*driver_name;	// Driver name
+
+      // create object of the printer...
       pappl_printer_t	*printer;	// Current printer
 
 
+
+
+      /*
+       * here we check whether top (definition line of printer tag is correct or not ....)
+       */
+        
       if ((num_options = cupsParseOptions(value, 0, &options)) != 5 || (printer_id = cupsGetOption("id", num_options, options)) == NULL || strtol(printer_id, NULL, 10) <= 0 || (printer_name = cupsGetOption("name", num_options, options)) == NULL || (device_id = cupsGetOption("did", num_options, options)) == NULL || (device_uri = cupsGetOption("uri", num_options, options)) == NULL || (driver_name = cupsGetOption("driver", num_options, options)) == NULL)
       {
         papplLog(system, PAPPL_LOGLEVEL_ERROR, "Bad printer definition on line %d of '%s'.", linenum, filename);
         break;
       }
 
+
+      /*
+       * here we check whether the printer that we have created ( with the credentials 
+       * from legacy-printer-app.state file are optimal or  not ....) 
+       */
+
       if ((printer = papplPrinterCreate(system, (int)strtol(printer_id, NULL, 10), printer_name, driver_name, device_id, device_uri)) == NULL)
       {
-	if (errno == EEXIST)
-	  papplLog(system, PAPPL_LOGLEVEL_ERROR, "Printer '%s' already exists, dropping duplicate printer and job history in state file.", printer_name);
-	else if (errno == EIO)
-	  papplLog(system, PAPPL_LOGLEVEL_ERROR, "Dropping printer '%s' and its job history because the driver ('%s') is no longer supported.", printer_name, driver_name);
-	else
-	  papplLog(system, PAPPL_LOGLEVEL_ERROR, "Dropping printer '%s' and its job history because an error occurred: %s", printer_name, strerror(errno));
+
+        printf("\npapplPrinterCreate won't be able to create the Printer from the legacy-printer-app.state file  ...\n");
+          if (errno == EEXIST)
+            papplLog(system, PAPPL_LOGLEVEL_ERROR, "Printer '%s' already exists, dropping duplicate printer and job history in state file.", printer_name);
+          else if (errno == EIO)
+            papplLog(system, PAPPL_LOGLEVEL_ERROR, "Dropping printer '%s' and its job history because the driver ('%s') is no longer supported.", printer_name, driver_name);
+          else
+            papplLog(system, PAPPL_LOGLEVEL_ERROR, "Dropping printer '%s' and its job history because an error occurred: %s", printer_name, strerror(errno));
+      }
+      else
+      {
+        // here you have printer which contains name and id with it...
+        // do authentication properly over here ....
+
+        
+
+        // here write the logic to fetch the printer preset from the file...
+        // printf("this means printer is created successfully with the given credentials \n");
+
+   
+        papplPresetAdd(system, printer);
+
+        cups_len_t ank, count;
+  printf("****************** -------------the number of presets in printer are %d\n", cupsArrayGetCount(printer->presets));
+
+  printf("the name of printer is --- %s \n", printer->name);
+
+  for (ank = 0, count = cupsArrayGetCount(printer->presets); ank < count; ank ++)
+  {
+    pappl_pr_preset_data_t *preset =   cupsArrayGetElement(printer->presets, ank);
+    printf("the name of the preset is ---- in printer webif.c ---- %s\n", preset->name);
+  }
+
+
       }
 
+
+    /// now start reading from the printer over .. here ...
       while (read_line(fp, line, sizeof(line), &value, &linenum))
       {
         if (!strcasecmp(line, "</Printer>"))
           break;
-	else if (!printer)
-	  continue;
-	else if (!strcasecmp(line, "DNSSDName"))
-	  papplPrinterSetDNSSDName(printer, value);
-	else if (!strcasecmp(line, "Location"))
-	  papplPrinterSetLocation(printer, value);
-	else if (!strcasecmp(line, "GeoLocation"))
-	  papplPrinterSetGeoLocation(printer, value);
-	else if (!strcasecmp(line, "Organization"))
-	  papplPrinterSetOrganization(printer, value);
-	else if (!strcasecmp(line, "OrganizationalUnit"))
-	  papplPrinterSetOrganizationalUnit(printer, value);
-	else if (!strcasecmp(line, "Contact"))
-	{
-	  pappl_contact_t	contact;// "printer-contact" value
+        else if (!printer)
+          continue;
+        else if (!strcasecmp(line, "DNSSDName"))
+          papplPrinterSetDNSSDName(printer, value);
+        else if (!strcasecmp(line, "Location"))
+          papplPrinterSetLocation(printer, value);
+        else if (!strcasecmp(line, "GeoLocation"))
+          papplPrinterSetGeoLocation(printer, value);
+        else if (!strcasecmp(line, "Organization"))
+          papplPrinterSetOrganization(printer, value);
+        else if (!strcasecmp(line, "OrganizationalUnit"))
+          papplPrinterSetOrganizationalUnit(printer, value);
+        else if (!strcasecmp(line, "Contact"))
+        {
+          pappl_contact_t	contact;// "printer-contact" value
 
-	  parse_contact(value, &contact);
-	  papplPrinterSetContact(printer, &contact);
-	}
-	else if (!strcasecmp(line, "HoldNewJobs"))
-	  printer->hold_new_jobs = true;
-	else if (!strcasecmp(line, "PrintGroup"))
-	  papplPrinterSetPrintGroup(printer, value);
-	else if (!strcasecmp(line, "MaxActiveJobs") && value)
-	  papplPrinterSetMaxActiveJobs(printer, (int)strtol(value, NULL, 10));
-	else if (!strcasecmp(line, "MaxCompletedJobs") && value)
-	  papplPrinterSetMaxCompletedJobs(printer, (int)strtol(value, NULL, 10));
-	else if (!strcasecmp(line, "NextJobId") && value)
-	  papplPrinterSetNextJobID(printer, (int)strtol(value, NULL, 10));
-	else if (!strcasecmp(line, "ImpressionsCompleted") && value)
-	  papplPrinterSetImpressionsCompleted(printer, (int)strtol(value, NULL, 10));
-	else if (!strcasecmp(line, "identify-actions-default"))
-	  printer->driver_data.identify_default = _papplIdentifyActionsValue(value);
-	else if (!strcasecmp(line, "label-mode-configured"))
-	  printer->driver_data.mode_configured = _papplLabelModeValue(value);
-	else if (!strcasecmp(line, "label-tear-offset-configured") && value)
-	  printer->driver_data.tear_offset_configured = (int)strtol(value, NULL, 10);
-	else if (!strcasecmp(line, "media-col-default"))
-	  parse_media_col(value, &printer->driver_data.media_default);
-	else if (!strncasecmp(line, "media-col-ready", 15))
-	{
-	  if ((i = (int)strtol(line + 15, NULL, 10)) >= 0 && i < PAPPL_MAX_SOURCE)
-	    parse_media_col(value, printer->driver_data.media_ready + i);
-	}
-	else if (!strcasecmp(line, "orientation-requested-default"))
-	  printer->driver_data.orient_default = (ipp_orient_t)ippEnumValue("orientation-requested", value);
-	else if (!strcasecmp(line, "output-bin-default") && value)
-	{
-	  for (i = 0; i < printer->driver_data.num_bin; i ++)
-	  {
-	    if (!strcmp(value, printer->driver_data.bin[i]))
-	    {
-	      printer->driver_data.bin_default = i;
-	      break;
-	    }
-	  }
-	}
-	else if (!strcasecmp(line, "print-color-mode-default"))
-	  printer->driver_data.color_default = _papplColorModeValue(value);
-	else if (!strcasecmp(line, "print-content-optimize-default"))
-	  printer->driver_data.content_default = _papplContentValue(value);
-	else if (!strcasecmp(line, "print-darkness-default") && value)
-	  printer->driver_data.darkness_default = (int)strtol(value, NULL, 10);
-	else if (!strcasecmp(line, "print-quality-default"))
-	  printer->driver_data.quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
-	else if (!strcasecmp(line, "print-scaling-default"))
-	  printer->driver_data.scaling_default = _papplScalingValue(value);
-	else if (!strcasecmp(line, "print-speed-default") && value)
-	  printer->driver_data.speed_default = (int)strtol(value, NULL, 10);
-	else if (!strcasecmp(line, "printer-darkness-configured") && value)
-	  printer->driver_data.darkness_configured = (int)strtol(value, NULL, 10);
-	else if (!strcasecmp(line, "printer-resolution-default") && value)
-	  sscanf(value, "%dx%ddpi", &printer->driver_data.x_default, &printer->driver_data.y_default);
-	else if (!strcasecmp(line, "sides-default"))
-	  printer->driver_data.sides_default = _papplSidesValue(value);
+          parse_contact(value, &contact);
+          papplPrinterSetContact(printer, &contact);
+        }
+        else if (!strcasecmp(line, "HoldNewJobs"))
+          printer->hold_new_jobs = true;
+        else if (!strcasecmp(line, "PrintGroup"))
+          papplPrinterSetPrintGroup(printer, value);
+        else if (!strcasecmp(line, "MaxActiveJobs") && value)
+          papplPrinterSetMaxActiveJobs(printer, (int)strtol(value, NULL, 10));
+        else if (!strcasecmp(line, "MaxCompletedJobs") && value)
+          papplPrinterSetMaxCompletedJobs(printer, (int)strtol(value, NULL, 10));
+        else if (!strcasecmp(line, "NextJobId") && value)
+          papplPrinterSetNextJobID(printer, (int)strtol(value, NULL, 10));
+        else if (!strcasecmp(line, "ImpressionsCompleted") && value)
+          papplPrinterSetImpressionsCompleted(printer, (int)strtol(value, NULL, 10));
+
+
+          // here we are setting the driver data
+        else if (!strcasecmp(line, "identify-actions-default"))
+          printer->driver_data.identify_default = _papplIdentifyActionsValue(value);
+        else if (!strcasecmp(line, "label-mode-configured"))
+          printer->driver_data.mode_configured = _papplLabelModeValue(value);
+        else if (!strcasecmp(line, "label-tear-offset-configured") && value)
+          printer->driver_data.tear_offset_configured = (int)strtol(value, NULL, 10);
+        else if (!strcasecmp(line, "media-col-default"))
+          parse_media_col(value, &printer->driver_data.media_default);
+        else if (!strncasecmp(line, "media-col-ready", 15))
+        {
+          if ((i = (int)strtol(line + 15, NULL, 10)) >= 0 && i < PAPPL_MAX_SOURCE)
+            parse_media_col(value, printer->driver_data.media_ready + i);
+        }
+        else if (!strcasecmp(line, "orientation-requested-default"))
+          printer->driver_data.orient_default = (ipp_orient_t)ippEnumValue("orientation-requested", value);
+        else if (!strcasecmp(line, "output-bin-default") && value)
+        {
+          for (i = 0; i < printer->driver_data.num_bin; i ++)
+          {
+            if (!strcmp(value, printer->driver_data.bin[i]))
+            {
+              printer->driver_data.bin_default = i;
+              break;
+            }
+          }
+        }
+        else if (!strcasecmp(line, "print-color-mode-default"))
+          printer->driver_data.color_default = _papplColorModeValue(value);
+        else if (!strcasecmp(line, "print-content-optimize-default"))
+          printer->driver_data.content_default = _papplContentValue(value);
+        else if (!strcasecmp(line, "print-darkness-default") && value)
+          printer->driver_data.darkness_default = (int)strtol(value, NULL, 10);
+        else if (!strcasecmp(line, "print-quality-default"))
+          printer->driver_data.quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
+        else if (!strcasecmp(line, "print-scaling-default"))
+          printer->driver_data.scaling_default = _papplScalingValue(value);
+        else if (!strcasecmp(line, "print-speed-default") && value)
+          printer->driver_data.speed_default = (int)strtol(value, NULL, 10);
+        else if (!strcasecmp(line, "printer-darkness-configured") && value)
+          printer->driver_data.darkness_configured = (int)strtol(value, NULL, 10);
+        else if (!strcasecmp(line, "printer-resolution-default") && value)
+          sscanf(value, "%dx%ddpi", &printer->driver_data.x_default, &printer->driver_data.y_default);
+        else if (!strcasecmp(line, "sides-default"))
+          printer->driver_data.sides_default = _papplSidesValue(value);
+
+
+    // what you will do over here is ....
+    /// write the code to put all the preset data from the file to preset 
+    // structure inside the printer... using an api (defined above this function)
+
+
+
+
+
+
+    // here we are saving the vendor options ...
         else if ((ptr = strstr(line, "-default")) != NULL)
         {
           char	defname[128],		// xxx-default name
@@ -370,13 +440,18 @@ papplSystemLoadState(
       if (printer && printer->driver_data.status_cb)
         (printer->driver_data.status_cb)(printer);
     }
+
+    // if the line contains some error .... cases to handle 
     else
     {
       papplLog(system, PAPPL_LOGLEVEL_WARN, "Unknown directive '%s' on line %d of '%s'.", line, linenum, filename);
     }
   }
-
   cupsFileClose(fp);
+
+  // you have system object ... use that to assign presets...
+
+
 
   return (true);
 }

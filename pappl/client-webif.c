@@ -1,7 +1,7 @@
 //
 // Core client web interface functions for the Printer Application Framework
 //
-// Copyright © 2019-2023 by Michael R Sweet.
+// Copyright © 2019-2022 by Michael R Sweet.
 // Copyright © 2010-2019 by Apple Inc.
 //
 // Licensed under Apache License v2.0.  See the file "LICENSE" for more
@@ -471,7 +471,7 @@ papplClientHTMLAuthorize(
     cupsHashData("sha2-256", (unsigned char *)auth_text, strlen(auth_text), auth_hash, sizeof(auth_hash));
     cupsHashString(auth_hash, sizeof(auth_hash), auth_text, sizeof(auth_text));
 
-    if (_papplIsEqual(auth_cookie, auth_text))
+    if (!strcmp(auth_cookie, auth_text))
     {
       // Hashes match so we are authorized.  Use "web-admin" as the username.
       papplCopyString(client->username, "web-admin", sizeof(client->username));
@@ -725,6 +725,7 @@ papplClientHTMLHeader(
 //
 // '_papplClientHTMLInfo()' - Show system/printer information.
 //
+
 
 void
 _papplClientHTMLInfo(
@@ -1250,6 +1251,15 @@ _papplClientHTMLPutLinks(
 					// URL scheme for authenticated links
 
 
+  printf("The number of links are ---- %d\n",cupsArrayGetCount(links));
+
+  for(int x =0;x<cupsArrayGetCount(links);x++)
+  {
+    l = (_pappl_link_t *)cupsArrayGetElement(links, x);
+    printf("the label on the link is --- %s\n" , l->label);
+
+
+  }
   // Loop through the links.
   //
   // Note: We use a loop and not cupsArrayGetFirst/Last because other threads may
@@ -1264,9 +1274,15 @@ _papplClientHTMLPutLinks(
     if (strcmp(client->uri, l->path_or_url))
     {
       if (l->path_or_url[0] != '/' || !(l->options & PAPPL_LOPTIONS_HTTPS_REQUIRED))
-	papplClientHTMLPrintf(client, "          <a class=\"btn\" href=\"%s\">%s</a>\n", l->path_or_url, papplClientGetLocString(client, l->label));
+      {
+	        papplClientHTMLPrintf(client, "          <a class=\"btn\" href=\"%s\">%s</a>\n", l->path_or_url, papplClientGetLocString(client, l->label));
+          printf("the name of the button is --- %s\n", papplClientGetLocString(client, l->label));
+      }
       else
-	papplClientHTMLPrintf(client, "          <a class=\"btn\" href=\"%s://%s:%d%s\">%s</a>\n", webscheme, client->host_field, client->host_port, l->path_or_url, papplClientGetLocString(client, l->label));
+      {
+	        papplClientHTMLPrintf(client, "          <a class=\"btn\" href=\"%s://%s:%d%s\">%s</a>\n", webscheme, client->host_field, client->host_port, l->path_or_url, papplClientGetLocString(client, l->label));
+
+      }
     }
     else
       papplClientHTMLPrintf(client, "          <span class=\"active\">%s</span>\n", papplClientGetLocString(client, l->label));

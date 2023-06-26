@@ -73,6 +73,16 @@ papplMainloop(
     pappl_ml_usage_cb_t   usage_cb,	// I - Usage callback or `NULL` for default
     void                  *data)	// I - Context pointer
 {
+
+  /// Ankit edits ..
+  printf("I 'm in the pappl Mainloop now \n");
+
+  if(!strcmp(argv[1] , "funct"))
+  {
+    printf("I am callling from the main loop file ...\n");
+    return (1);
+  }
+
   const char	*base_name;		// Base Name
   int		i, j;			// Looping vars
   const char	*opt;			// Option character

@@ -373,13 +373,14 @@ pappl_usb_find(
             {
               // Build the device URI...
               const char *make,		// Pointer to make
-			*model;		// Pointer to model
+			*model,		// Pointer to model
+			*serial = NULL;	// Pointer to serial number
 	      char	*ptr,		// Pointer into device ID
 			copy_did[_PAPPL_MAX_DEVICE_ID],
 					// Copy of device ID
 			temp_mfg[256],	// Temporary string for manufacturer
 			temp_mdl[256],	// Temporary string for model
-			sn[256];	// String for serial #
+			temp_sn[256];	// Temporary string for serial #
 
               if (libusb_get_string_descriptor_ascii(device->handle, devdesc.iManufacturer, (unsigned char *)temp_mfg, sizeof(temp_mfg)) <= 0)
 	        papplCopyString(temp_mfg, "Unknown", sizeof(temp_mfg));
@@ -387,13 +388,13 @@ pappl_usb_find(
               if (libusb_get_string_descriptor_ascii(device->handle, devdesc.iProduct, (unsigned char *)temp_mdl, sizeof(temp_mdl)) <= 0)
 	        papplCopyString(temp_mdl, "Product", sizeof(temp_mdl));
 
-              if (libusb_get_string_descriptor_ascii(device->handle, devdesc.iSerialNumber, (unsigned char *)sn, sizeof(sn)) <= 0)
-	        snprintf(sn, sizeof(sn), "%d.%d", device->conf, device->iface);
+              if (libusb_get_string_descriptor_ascii(device->handle, devdesc.iSerialNumber, (unsigned char *)temp_sn, sizeof(temp_sn)) <= 0)
+	        snprintf(temp_sn, sizeof(temp_sn), "%d.%d", device->conf, device->iface);
 
               if (!device->device_id[0])
               {
                 // Blank device ID, build one from the USB device strings...
-                snprintf(device->device_id, sizeof(device->device_id), "MFG:%s;MDL:%s;SN:%s;", temp_mfg, temp_mdl, sn);
+                snprintf(device->device_id, sizeof(device->device_id), "MFG:%s;MDL:%s;SN:%s;", temp_mfg, temp_mdl, temp_sn);
               }
 
 	      papplCopyString(copy_did, device->device_id, sizeof(copy_did));
@@ -412,6 +413,21 @@ pappl_usb_find(
 	      else
 	        model = temp_mdl;
 
+              if ((serial = strstr(copy_did, "SERIALNUMBER:")) != NULL)
+                serial += 12;
+              else if ((serial = strstr(copy_did, "SERN:")) != NULL)
+                serial += 5;
+              else if ((serial = strstr(copy_did, "SN:")) != NULL)
+                serial += 3;
+	      else
+	        serial = temp_sn;
+
+              if (serial)
+              {
+                if ((ptr = strchr(serial, ';')) != NULL)
+                  *ptr = '\0';
+              }
+
               if (make)
               {
                 if ((ptr = strchr(make, ';')) != NULL)
@@ -424,7 +440,10 @@ pappl_usb_find(
                   *ptr = '\0';
               }
 
-	      httpAssembleURIf(HTTP_URI_CODING_ALL, device_uri, sizeof(device_uri), "usb", NULL, make, 0, "/%s?serial=%s", model, sn);
+              if (serial)
+                httpAssembleURIf(HTTP_URI_CODING_ALL, device_uri, sizeof(device_uri), "usb", NULL, make, 0, "/%s?serial=%s", model, serial);
+              else
+                httpAssembleURIf(HTTP_URI_CODING_ALL, device_uri, sizeof(device_uri), "usb", NULL, make, 0, "/%s", model);
 
 	      if (!strcmp(make, "HP") && !strncmp(model, "HP ", 3))
 	        snprintf(device_info, sizeof(device_info), "%s (USB)", model);

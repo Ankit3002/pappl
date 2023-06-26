@@ -373,12 +373,46 @@ struct pappl_pr_driver_data_s		// Printer driver data
 						// Vendor attribute names
 };
 
+// preset structure .... for storing attributes from file...
+struct pappl_pr_preset_data_s		// Printer driver data
+{
+  // instance variables of the presets....
+  char *name;                       // Name of the Preset
+  int preset_id;                    // preset id 
+  ipp_orient_t		orient_default;		// "orientation-requested-default" value
+  pappl_color_mode_t	color_default;		// "print-color-mode-default" value
+  pappl_content_t	content_default;	// "print-content-default" value
+  ipp_quality_t		quality_default;	// "print-quality-default" value
+  pappl_scaling_t	scaling_default;	// "print-scaling-default" value
+  pappl_sides_t		sides_default;		// "sides-default" value
+  int			x_default;		// Default horizontal resolution
+  int			y_default;		// Default vertical resolution
+  pappl_media_col_t	media_default;		// Default media
+  pappl_media_col_t	media_ready[PAPPL_MAX_SOURCE];
+						// Ready media
+  int			num_bin;		// Number of output bins
+  const char		*bin[PAPPL_MAX_BIN];	// Output bins
+  int			bin_default;		// Default output bin
+  pappl_label_mode_t	mode_configured;	// label-mode-configured
+  int			tear_offset_configured;	// label-tear-offset-configured
+  int			speed_default;		// print-speed-default
+  int			darkness_default;	// print-darkness-default
+  int			darkness_configured;	// printer-darkness-configured
+  pappl_identify_actions_t identify_default;	// "identify-actions-default" values
+  ipp_t			*vendor_attrs;		// vendor attributes
+
+};
+
 
 
 //
 // Functions...
 //
+// extern void		papplPresetCreate(pappl_printer_t *printer , char *filename) _PAPPL_PUBLIC;
 
+extern void   _papplSystemAddPreset(pappl_system_t *system , pappl_printer_t *printer, pappl_pr_preset_data_t *preset) _PAPPL_PRIVATE;
+extern void		papplPresetAdd(pappl_system_t *system ,pappl_printer_t *printer) _PAPPL_PUBLIC;
+// extern void   papplPrinterGetPresetData(pappl_printer_t *printer )  _PAPPL_PUBLIC;
 extern void		papplPrinterAddLink(pappl_printer_t *printer, const char *label, const char *path_or_url, pappl_loptions_t options) _PAPPL_PUBLIC;
 
 extern void		papplPrinterCancelAllJobs(pappl_printer_t *printer) _PAPPL_PUBLIC;

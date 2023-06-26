@@ -102,6 +102,9 @@ typedef unsigned char pappl_dither_t[16][16];
                                         // 16x16 dither array
 typedef struct pappl_pr_driver_data_s pappl_pr_driver_data_t;
 					// Print driver data
+
+typedef struct pappl_pr_preset_data_s pappl_pr_preset_data_t;
+          // Preset data
 typedef struct _pappl_job_s pappl_job_t;// Job object
 typedef struct _pappl_loc_s pappl_loc_t;// Localization data
 typedef struct pappl_pr_options_s pappl_pr_options_t;

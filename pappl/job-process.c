@@ -12,6 +12,8 @@
 //
 
 #include "pappl-private.h"
+#include <stdio.h>
+
 
 
 //
@@ -42,6 +44,7 @@ papplJobCreatePrintOptions(
     unsigned         num_pages,		// I - Number of pages (`0` for unknown)
     bool             color)		// I - Is the document in color?
 {
+  printf("this is called from job-process.c \n");
   pappl_pr_options_t	*options;	// New options data
   cups_len_t		i,		// Looping var
 			count;		// Number of values
@@ -494,7 +497,13 @@ papplJobCreatePrintOptions(
   papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "printer-resolution=%dx%ddpi", options->printer_resolution[0], options->printer_resolution[1]);
 
   for (i = 0; i < (cups_len_t)options->num_vendor; i ++)
-    papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "%s=%s", options->vendor[i].name, options->vendor[i].value);
+  {
+      printf("---- vendor name is --%s---" , options->vendor[i].name);
+      printf("---- vendor value is --%s---" , options->vendor[i].value);
+      
+      papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "%s=%s", options->vendor[i].name, options->vendor[i].value);
+  }
+  
 
   _papplRWUnlock(printer);
 
@@ -1063,7 +1072,7 @@ finish_job(pappl_job_t  *job)		// I - Job
     papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Device read metrics: %lu requests, %lu bytes, %lu msecs", (unsigned long)metrics.read_requests, (unsigned long)metrics.read_bytes, (unsigned long)metrics.read_msecs);
     papplLogJob(job, PAPPL_LOGLEVEL_DEBUG, "Device write metrics: %lu requests, %lu bytes, %lu msecs", (unsigned long)metrics.write_requests, (unsigned long)metrics.write_bytes, (unsigned long)metrics.write_msecs);
 
-//    papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Closing device for job %d.", job->job_id);
+    papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Closing device for job %d.", job->job_id);
 
     papplDeviceClose(printer->device);
     printer->device = NULL;
@@ -1117,7 +1126,7 @@ start_job(pappl_job_t *job)		// I - Job
 
   while (!printer->device && !printer->is_deleted && !job->is_canceled && papplSystemIsRunning(printer->system))
   {
-//    papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Opening device for job %d.", job->job_id);
+    papplLogPrinter(printer, PAPPL_LOGLEVEL_DEBUG, "Opening device for job %d.", job->job_id);
 
     printer->device = papplDeviceOpen(printer->device_uri, job->name, papplLogDevice, job->system);
 

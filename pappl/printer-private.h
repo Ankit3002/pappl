@@ -60,8 +60,17 @@ struct _pappl_printer_s			// Printer data
   pappl_device_t	*device;		// Current connection to device (if any)
   bool			device_in_use;		// Is the device in use?
   char			*driver_name;		// Driver name
+
+  // the below contains driver data .... ( only the standard ipp attributes i guess so !!)
   pappl_pr_driver_data_t driver_data;		// Driver data
+
+  // this contains the vendor attributes ....--- ( figure that out ??)
   ipp_t			*driver_attrs;		// Driver attributes
+
+  //preset instance defined over here ...
+  cups_array_t *presets;
+
+
   int			num_ready;		// Number of ready media
   ipp_t			*attrs;			// Other (static) printer attributes
   time_t		start_time;		// Startup time
@@ -77,9 +86,13 @@ struct _pappl_printer_s			// Printer data
   int			max_active_jobs,	// Maximum number of active jobs to accept
 			max_completed_jobs,	// Maximum number of completed jobs to retain in history
 			max_preserved_jobs;	// Maximum number of completed jobs to preserve in history
+
+
   cups_array_t		*active_jobs,		// Array of active jobs
-			*all_jobs,		// Array of all jobs
+              *all_jobs,		// Array of all jobs
 			*completed_jobs;	// Array of completed jobs
+
+
   int			next_job_id,		// Next "job-id" value
 			impcompleted;		// "printer-impressions-completed" value
   cups_array_t		*links;			// Web navigation links
@@ -142,6 +155,8 @@ extern void		_papplPrinterWebIteratorCallback(pappl_printer_t *printer, pappl_cl
 extern void		_papplPrinterWebJobs(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
 extern void		_papplPrinterWebMedia(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
 extern void		_papplPrinterWebSupplies(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
+extern void		_papplPrinterPreset(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
+extern void		_papplPrinterPresetEdit(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
 
 extern const char	*_papplColorModeString(pappl_color_mode_t value) _PAPPL_PRIVATE;
 extern pappl_color_mode_t _papplColorModeValue(const char *value) _PAPPL_PRIVATE;

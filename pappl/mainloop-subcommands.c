@@ -10,7 +10,8 @@
 //
 // Include necessary headers
 //
-
+#include <stdlib.h>
+#include <stdio.h>
 #  include "pappl-private.h"
 #  ifdef __APPLE__
 #    include <bsm/audit.h>
@@ -581,11 +582,16 @@ _papplMainloopRunServer(
     pappl_ml_system_cb_t  system_cb,	// I - System callback
     void                  *data)	// I - Callback data
 {
+  // snprintf("Ankit is calling from here ... \n");
   pappl_system_t	*system;	// System object
 #if !_WIN32
   char			sockname[1024];	// Socket filename
 #endif // !_WIN32
   char			statename[1024];// State filename
+
+
+
+
 #if _WIN32
   const char		*home = getenv("USERPROFILE");
 					// Home directory
@@ -593,6 +599,10 @@ _papplMainloopRunServer(
   const char		*home = getenv("HOME");
 					// Home directory
 #endif // _WIN32
+
+
+
+
   const char		*snap_common = getenv("SNAP_COMMON");
 					// Common data directory for snaps
   const char		*tmpdir = papplGetTempDir();
@@ -604,14 +614,22 @@ _papplMainloopRunServer(
 #endif // __APPLE__
 
 
+
+ /*
+  * system object creation happens ....
+ */
+
   // Create the system object...
   if (system_cb)
   {
+    printf("system object is created \n");
     // Developer-supplied system object...
     system = (system_cb)((int)num_options, options, data);
   }
   else
   {
+    printf("system object is used \n");
+
     // Use the default system object...
     system = default_system_cb(base_name, (int)num_options, options, data);
   }
@@ -621,6 +639,11 @@ _papplMainloopRunServer(
     _papplLocPrintf(stderr, _PAPPL_LOC("%s: Failed to create a system."), base_name);
     return (1);
   }
+
+
+
+
+
 
   // Set the version number as needed...
   if (system->num_versions == 0 && version)
@@ -633,6 +656,12 @@ _papplMainloopRunServer(
     sscanf(version, "%hu.%hu.%hu.%hu", sysversion.version + 0, sysversion.version + 1, sysversion.version + 2, sysversion.version + 3);
     papplSystemSetVersions(system, 1, &sysversion);
   }
+
+
+
+
+
+
 
   // Set the footer HTML as needed...
   if (!system->footer_html && footer_html)
@@ -653,39 +682,66 @@ _papplMainloopRunServer(
   papplSystemAddListeners(system, _papplMainloopGetServerPath(base_name, getuid(), sockname, sizeof(sockname)));
 #endif // _WIN32
 
+
+
+  // if(system->save_cb == NULL)
+  // {
+  //   printf("save_cb callback fucntion is  null something is there ...\n");
+  // }
+  // else
+  // {
+  //   printf("save_cb callback fucntion is not null something is there ...\n");
+
+  // }
+
   // Finish initialization...
   if (!system->save_cb)
   {
+    printf("here we are saving the information of printer in a statefile \n");
     // Register a callback for saving state information, then load any
     // previous state...
     statename[0] = '\0';
 
     if (snap_common)
     {
+
       // Running inside a snap (https://snapcraft.io), so use the snap's common
       // data directory...
       if (!access(snap_common, X_OK))
         snprintf(statename, sizeof(statename), "%s/%s.state", snap_common, base_name);
     }
+
+  // here the below happens in ubuntu kind of devices...
 #if !_WIN32
     else if (!getuid())
     {
+
+
       // Running as root, so put the state file in the local state directory
       snprintf(statename, sizeof(statename), PAPPL_STATEDIR "/lib/%s.state", base_name);
 
-      // Make sure base directory exists
-      if (mkdir(PAPPL_STATEDIR "/lib", 0777) && errno != EEXIST)
-	statename[0] = '\0';
+      if (access(PAPPL_STATEDIR "/lib", X_OK) && errno == ENOENT)
+      {
+	// Make sure base directory exists
+        if (mkdir(PAPPL_STATEDIR "/lib", 0777))
+          statename[0] = '\0';
+      }
     }
 #endif // !_WIN32
     else if (xdg_config_home)
     {
+
+
       // Use Freedesktop per-user config directory
       if (!access(xdg_config_home, X_OK))
 	snprintf(statename, sizeof(statename), "%s/%s.state", xdg_config_home, base_name);
     }
+
+    // the below happens in windows and mac os ....
     else if (home)
     {
+
+
 #ifdef __APPLE__
       // Put the state in "~/Library/Application Support"
       snprintf(statename, sizeof(statename), "%s/Library/Application Support/%s.state", home, base_name);
@@ -697,10 +753,12 @@ _papplMainloopRunServer(
 #else
       // Put the state under a ".config" directory in the home directory
       snprintf(statename, sizeof(statename), "%s/.config", home);
-
-      // Make ~/.config as needed
-      if (mkdir(statename, 0777) && errno != EEXIST)
-	statename[0] = '\0';
+      if (access(statename, X_OK) && errno == ENOENT)
+      {
+	// Make ~/.config as needed
+        if (mkdir(statename, 0777))
+          statename[0] = '\0';
+      }
 
       if (statename[0])
 	snprintf(statename, sizeof(statename), "%s/.config/%s.state", home, base_name);
@@ -711,6 +769,8 @@ _papplMainloopRunServer(
     {
       // As a last resort, put the state in the temporary directory (where it
       // will be lost on the nest reboot/logout...
+
+
 #if _WIN32
       snprintf(statename, sizeof(statename), "%s/%s.state", tmpdir, base_name);
 #else
@@ -718,15 +778,20 @@ _papplMainloopRunServer(
 #endif // _WIN32
     }
 
+
+
     papplSystemSetSaveCallback(system, (pappl_save_cb_t)papplSystemSaveState, (void *)statename);
 
+    printf("the load state value is -- %d\n", papplSystemLoadState(system, statename) );
     if (!papplSystemLoadState(system, statename) && autoadd_cb)
     {
       // If there is no state file, auto-add locally-connected printers...
       papplSystemCreatePrinters(system, PAPPL_DEVTYPE_LOCAL, /*cb*/NULL, /*cb_data*/NULL);
+      printf("the new state file got created because old one is deleted by me \n");
     }
   }
 
+  
   // Set the mainloop system object in case it is needed.
   pthread_mutex_lock(&mainloop_mutex);
   mainloop_system = system;
@@ -778,6 +843,8 @@ _papplMainloopRunServer(
 
   return (0);
 }
+
+
 
 
 //
@@ -1364,6 +1431,22 @@ _papplMainloopShutdownServer(
 }
 
 
+
+
+
+void function(){
+  printf("this is called from the function that i have created by @Ankit\n");
+}
+
+
+
+
+
+
+
+
+
+
 //
 // '_papplMainloopSubmitJob()' - Submit job(s).
 //
@@ -1376,6 +1459,7 @@ _papplMainloopSubmitJob(
     cups_len_t    num_files,		// I - Number of files
     char          **files)		// I - Files
 {
+  printf("pappl submit job is called !\n");
   const char	*document_format,	// Document format
 		*document_name,		// Document name
 		*filename,		// Current print filename
@@ -1467,6 +1551,34 @@ _papplMainloopSubmitJob(
     // Get supported attributes...
     supported = get_printer_attributes(http, printer_uri, printer_name, resource, 0, NULL);
 
+    // write the logic to print all the attributes...
+     ipp_attribute_t *attr;
+
+    for (attr = ippFirstAttribute(supported); attr; attr = ippNextAttribute(supported)) {
+        const char *name = ippGetName(attr);
+        int count = ippGetCount(attr);
+        ipp_tag_t value_tag = ippGetValueTag(attr);
+
+        printf("the number of attributes----%d\n", count);
+        printf("Attribute: %s\n", name);
+
+        for (int i = 0; i < count; i++) {
+            if (value_tag == IPP_TAG_TEXT) {
+                const char *value = ippGetString(attr, i, NULL);
+                printf("  Value %d: %s\n", i, value);
+            } else if (value_tag == IPP_TAG_INTEGER) {
+                int value = ippGetInteger(attr, i);
+                printf("  Value %d: %d\n", i, value);
+            }
+            // Add support for other value types as needed
+
+            // Note: You can use ippGetValueTagAsString(value_tag) to get a string representation of the value tag if desired
+        }
+    }
+
+
+
+
     // Send a Print-Job request...
     request = ippNewRequest(IPP_OP_PRINT_JOB);
     if (printer_uri)
@@ -1480,6 +1592,19 @@ _papplMainloopSubmitJob(
 
     if (document_format)
       ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_MIMETYPE, "document-format", NULL, document_format);
+
+
+    // write the code to see what values are there inside these options over here ...
+
+    
+
+
+    printf("I am above the option name logic ");
+    for( int x = 0;x< num_options;x++)
+    {
+      printf("the option name is %s\n" , options[x].name);
+    }
+
 
     _papplMainloopAddOptions(request, num_options, options, supported);
     ippDelete(supported);
@@ -1689,11 +1814,14 @@ default_system_cb(
       // Running as root, so put the state file in the local state directory
       snprintf(spoolname, sizeof(spoolname), PAPPL_STATEDIR "/spool/%s", base_name);
 
-      // Make sure base directory exists
-      if (mkdir(PAPPL_STATEDIR "/spool", 0777) && errno != EEXIST)
+      if (access(PAPPL_STATEDIR "/spool", X_OK) && errno == ENOENT)
       {
-	// Can't use local state directory, so use the last resort...
-	spoolname[0] = '\0';
+	// Make sure base directory exists
+	if (mkdir(PAPPL_STATEDIR "/spool", 0777))
+	{
+	  // Can't use local state directory, so use the last resort...
+	  spoolname[0] = '\0';
+	}
       }
     }
 #endif // !_WIN32
@@ -1708,10 +1836,12 @@ default_system_cb(
 #else
       // Put the spool directory under a ".config" directory in the home directory
       snprintf(spoolname, sizeof(spoolname), "%s/.config", home);
-
-      // Make ~/.config as needed
-      if (mkdir(spoolname, 0777) && errno != EEXIST)
-	spoolname[0] = '\0';
+      if (access(spoolname, X_OK) && errno == ENOENT)
+      {
+	// Make ~/.config as needed
+        if (mkdir(spoolname, 0777))
+          spoolname[0] = '\0';
+      }
 
       if (spoolname[0])
 	snprintf(spoolname, sizeof(spoolname), "%s/.config/%s.d", home, base_name);
