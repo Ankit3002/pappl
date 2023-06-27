@@ -1256,7 +1256,7 @@ _papplClientHTMLPutLinks(
   for(int x =0;x<cupsArrayGetCount(links);x++)
   {
     l = (_pappl_link_t *)cupsArrayGetElement(links, x);
-    printf("the label on the link is --- %s\n" , l->label);
+    // printf("the label on the link is --- %s\n" , l->label);
 
 
   }

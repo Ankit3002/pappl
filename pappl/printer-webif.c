@@ -253,7 +253,16 @@ void _papplPrinterPresetEdit(
 {
 
   // // create an object of preset data ...
+  printf("******************************\n");
+  printf("******************************\n");
+  printf("******************************\n");
+  printf("******************************\n");
+  printf("******************************\n");
+
   printf("I am in the printer-webif.c file and I am called from _papplPresetEdit api ... \n");
+
+  printf("    \n");
+  printf("   \n");
 
   // pappl_pr_preset_data_t preset_data;
 
@@ -294,38 +303,26 @@ void _papplPrinterPresetEdit(
 
   // here create an api to fetch preset  data from file ... 
 
+  cups_len_t ank, count;
+  printf("****************** -------------the number of presets in printer are %d\n", cupsArrayGetCount(printer->presets));
 
+  printf("the name of printer is --- %s \n", printer->name);
 
-  // error ---- may be you havent changed the printer state thats why presets wont get written to where you are 
-  // expecting them.....
-
-
-  // check that whether the changes that you are writing are getting added in the object of pppp...
-
-  
-
-    // pappl_pr_preset_data_t *pre_ankit =  cupsArrayGetElement(printer->presets, 1);
-    cups_len_t count = cupsArrayGetCount(printer->presets);
-
-
-    //now create only 1 preset a particular line .... you are storing object as well at each line that you are 
-    //reading .....
-
-    
-
-
-     printf("the number of presets that i have in the printer object in the webif file ---  %d\n",count);
-
-      
-    // (cb)((pappl_printer_t *)cupsArrayGetElement(system->printers, i), data);
+  for (ank = 0, count = cupsArrayGetCount(printer->presets); ank < count; ank ++)
+  {
+    pappl_pr_preset_data_t *preset =   cupsArrayGetElement(printer->presets, ank);
+    printf("the name of the preset is ---- in printer webif.c ---- %s\n", preset->name);
+  }
 
 
 
+  printf("    \n");
+  printf("   \n");
 
   // get all the driver data over here ...
   papplPrinterGetDriverData(printer, &data);
 
-  printf("the Name of the Printer --- %s\n", printer->name);
+ 
     /*
      *   here we are saving the data ... using the POST Method ...
      *

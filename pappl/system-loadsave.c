@@ -195,18 +195,6 @@ papplSystemLoadState(
    
         papplPresetAdd(system, printer);
 
-        cups_len_t ank, count;
-  printf("****************** -------------the number of presets in printer are %d\n", cupsArrayGetCount(printer->presets));
-
-  printf("the name of printer is --- %s \n", printer->name);
-
-  for (ank = 0, count = cupsArrayGetCount(printer->presets); ank < count; ank ++)
-  {
-    pappl_pr_preset_data_t *preset =   cupsArrayGetElement(printer->presets, ank);
-    printf("the name of the preset is ---- in printer webif.c ---- %s\n", preset->name);
-  }
-
-
       }
 
 
