@@ -237,32 +237,50 @@ _papplPrinterPreset(
   strcat(uri_preset, "/presets/create");
 
   // define the route to enter preset page for creating preset page ...
-  papplClientHTMLPrintf(client, "<button id=\"navigate_button\" onClick=\"window.location.href = '%s';\">Create</button>" , uri_preset);
+  papplClientHTMLPrintf(client, "<button id=\"create_button\" onClick=\"window.location.href = '%s';\">Create</button>" , uri_preset);
 
 
   // write the logic over here to show different presets ....
+
+  // start the table tag ...
+  papplClientHTMLPrintf(client ,"<table>");
+
+
+  cups_len_t ank , count;
+  count = cupsArrayGetCount(printer->presets);
+  for(ank=0; ank< count; ank++)
+  {
+    pappl_pr_preset_data_t *preset = cupsArrayGetElement(printer->presets , ank);
+
+    papplClientHTMLPrintf(client , "<tr><td> %s </td><td>   <button id=\"edit_button\" onClick=\"window.location.href = '%s';\">Edit</button>    </td> <td> <button id=\"copy_button\" onClick=\"window.location.href = '%s';\">Copy</button>  </td> <td>  <button id=\"delete_button\" onClick=\"window.location.href = '%s';\">Delete</button>  </td> </tr>" , preset->name , uri_preset, uri_preset, uri_preset);
+
+
+    // // write logic to add buttons for each preset...
+    // papplClientHTMLPrintf(client, "<button id=\"edit_button\" onClick=\"window.location.href = '%s';\">Edit</button>" , uri_preset);
+    // papplClientHTMLPrintf(client, "<button id=\"copy_button\" onClick=\"window.location.href = '%s';\">Copy</button>" , uri_preset);
+    // papplClientHTMLPrintf(client, "<button id=\"delete_button\" onClick=\"window.location.href = '%s';\">Delete</button>" , uri_preset);
+
+
+  }
+
+
+  papplClientHTMLPrintf(client, "</table>");
+  
 
   
 }
 
 /// function to edit preset ...
+// here we fetch data from the file ...  the presets data ...
 
 void _papplPrinterPresetEdit(
     pappl_client_t  *client,		// I - Client
-    pappl_printer_t *printer)		// I - Printer
+    resource_data_t *resource_data
+    )		
 {
 
   // // create an object of preset data ...
-  printf("******************************\n");
-  printf("******************************\n");
-  printf("******************************\n");
-  printf("******************************\n");
-  printf("******************************\n");
-
   printf("I am in the printer-webif.c file and I am called from _papplPresetEdit api ... \n");
-
-  printf("    \n");
-  printf("   \n");
 
   // pappl_pr_preset_data_t preset_data;
 
@@ -301,28 +319,640 @@ void _papplPrinterPresetEdit(
 
 
 
-  // here create an api to fetch preset  data from file ... 
 
-  cups_len_t ank, count;
-  printf("****************** -------------the number of presets in printer are %d\n", cupsArrayGetCount(printer->presets));
 
-  printf("the name of printer is --- %s \n", printer->name);
+  pappl_printer_t * printer = resource_data->printer;
+  const char *preset_name = resource_data->preset_name;
 
-  for (ank = 0, count = cupsArrayGetCount(printer->presets); ank < count; ank ++)
+
+  papplPrinterGetDriverData(printer, &data);
+
+
+
+//   // get all the driver data over here ...
+
+  // write the logic to grab particular preset ...
+  cups_len_t preset_iterator , preset_count;
+  preset_count = cupsArrayGetCount(printer->presets);
+  pappl_pr_preset_data_t * iterator_preset;
+  for(preset_iterator = 0;preset_iterator < preset_count; preset_iterator++)
   {
-    pappl_pr_preset_data_t *preset =   cupsArrayGetElement(printer->presets, ank);
-    printf("the name of the preset is ---- in printer webif.c ---- %s\n", preset->name);
+    iterator_preset = cupsArrayGetElement(printer->presets, preset_iterator);
+    if(!strcasecmp(iterator_preset->name , preset_name))
+      break;
+  }
+
+  
+
+  // now you have the right preset .... do the changes accordingly ...
+
+    /*
+     *   here we are saving the data ... using the POST Method ...
+     *
+     */
+
+  
+//   if (client->operation == HTTP_STATE_POST)
+//   {
+//     cups_len_t		num_form = 0;	// Number of form variable
+//     cups_option_t	*form = NULL;	// Form variables
+//     int			num_vendor = 0;	// Number of vendor options
+//     cups_option_t	*vendor = NULL;	// Vendor options
+
+//     if ((num_form = (cups_len_t)papplClientGetForm(client, &form)) == 0)
+//     {
+//       status = _PAPPL_LOC("Invalid form data.");
+//     }
+//     else if (!papplClientIsValidForm(client, (int)num_form, form))
+//     {
+//       status = _PAPPL_LOC("Invalid form submission.");
+//     }
+
+//       // after fetching the data from the web forms .... ( here add those into the driver ... ( saving data ))  
+//     else
+//     {
+//       // here save this into the file
+
+//       // use papplFileOpen ---  function to open files and all ....
+
+//       char something[1024];
+
+//       char buf_me[8096];
+
+//       for (size_t i = 0; i < num_form; i++) {
+//         strcat(buf_me, form[i].name);
+//         strcat(buf_me, "----");
+//         strcat(buf_me, form[i].value);
+//         strcat(buf_me, "\n");
+//         printf("Option Name in the web default page  : %s\n", form[i].name);
+//         printf("Option Value in the web defualt page : %s\n", form[i].value);
+//         printf("\n");
+//       }
+
+//       printf("the DATA ---- %s\n", buf_me);
+
+//       int ankit_file_descriptor;
+//       ankit_file_descriptor = papplPrinterOpenFile(printer,something, sizeof(something), NULL, "preset_opt", "configuration_me","w");
+
+//       size_t leng = strlen(buf_me);
+//       ssize_t bytes_written = write(ankit_file_descriptor, buf_me, leng);
+//       close(ankit_file_descriptor);
+
+//       const char	*value;		// Value of form variable
+//       char		*end;			// End of value
+
+
+
+//       if ((value = cupsGetOption("orientation-requested", num_form, form)) != NULL)
+//       {
+//         data.orient_default = (ipp_orient_t)strtol(value, &end, 10);
+
+//         if (errno == ERANGE || *end || data.orient_default < IPP_ORIENT_PORTRAIT || data.orient_default > IPP_ORIENT_NONE)
+//           data.orient_default = IPP_ORIENT_PORTRAIT;
+//       }
+
+//       if ((value = cupsGetOption("output-bin", num_form, form)) != NULL)
+//       {
+//         for (i = 0; i < data.num_bin; i ++)
+//         {
+//           if (!strcmp(data.bin[i], value))
+//           {
+//             data.bin_default = i;
+//             break;
+//           }
+// 	}
+//       }
+
+//       if ((value = cupsGetOption("print-color-mode", num_form, form)) != NULL)
+//         data.color_default = _papplColorModeValue(value);
+
+//       if ((value = cupsGetOption("print-content-optimize", num_form, form)) != NULL)
+//         data.content_default = _papplContentValue(value);
+
+//       if ((value = cupsGetOption("print-darkness", num_form, form)) != NULL)
+//       {
+//         data.darkness_configured = (int)strtol(value, &end, 10);
+
+//         if (errno == ERANGE || *end || data.darkness_configured < 0 || data.darkness_configured > 100)
+//           data.darkness_configured = 50;
+//       }
+
+//       if ((value = cupsGetOption("print-quality", num_form, form)) != NULL)
+//         data.quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
+
+//       if ((value = cupsGetOption("print-scaling", num_form, form)) != NULL)
+//         data.scaling_default = _papplScalingValue(value);
+
+//       if ((value = cupsGetOption("print-speed", num_form, form)) != NULL)
+//       {
+//         data.speed_default = (int)strtol(value, &end, 10) * 2540;
+
+//         if (errno == ERANGE || *end || data.speed_default < 0 || data.speed_default > data.speed_supported[1])
+//           data.speed_default = 0;
+//       }
+
+//       if ((value = cupsGetOption("sides", num_form, form)) != NULL)
+//         data.sides_default = _papplSidesValue(value);
+
+//       if ((value = cupsGetOption("printer-resolution", num_form, form)) != NULL)
+//       {
+//         if (sscanf(value, "%dx%ddpi", &data.x_default, &data.y_default) == 1)
+//           data.y_default = data.x_default;
+//       }
+
+//       if ((value = cupsGetOption("media-source", num_form, form)) != NULL)
+//       {
+//         for (i = 0; i < data.num_source; i ++)
+// 	{
+// 	  if (!strcmp(value, data.source[i]))
+// 	  {
+// 	    data.media_default = data.media_ready[i];
+// 	    break;
+// 	  }
+// 	}
+//       }
+
+//       // till here we save the default attributes ( not the vendor one ) ...
+
+
+//       // save the vendor attributes over here ...
+
+//       for (i = 0; i < data.num_vendor; i ++)
+//       {
+//         char	supattr[128];		// xxx-supported
+
+//         snprintf(supattr, sizeof(supattr), "%s-supported", data.vendor[i]);
+
+//         if ((value = cupsGetOption(data.vendor[i], num_form, form)) != NULL)
+// 	  num_vendor = (int)cupsAddOption(data.vendor[i], value, (cups_len_t)num_vendor, &vendor);
+// 	else if (ippFindAttribute(printer->driver_attrs, supattr, IPP_TAG_BOOLEAN))
+// 	  num_vendor = (int)cupsAddOption(data.vendor[i], "false", (cups_len_t)num_vendor, &vendor);
+//       }
+
+
+//       if (papplPrinterSetDriverDefaults(printer, &data, num_vendor, vendor))
+//         status = _PAPPL_LOC("Changes saved.");
+//       else
+//         status = _PAPPL_LOC("Bad printer defaults.");
+
+//       cupsFreeOptions((cups_len_t)num_vendor, vendor);
+//     }
+
+//     cupsFreeOptions(num_form, form);
+//   }
+
+
+
+
+//  // if you don't wanna do some changes then this one ...
+
+
+
+
+
+ 
+  papplClientHTMLPrinterHeader(client, printer, _PAPPL_LOC("Top Heading of Preset Options..."), 0, NULL, NULL);
+
+  char		printer_name[128] = "";	// Printer Name
+
+  papplClientHTMLPrintf(client,
+      "<label for=\"printer_name\">%s:</label><br>\n"
+      "<input type=\"text\" name=\"printer_name\" placeholder=\"%s\" value=\"%s\" required><br>\n",
+      papplClientGetLocString(client, _PAPPL_LOC("Name")),
+      papplClientGetLocString(client, _PAPPL_LOC("Name of Preset")),
+      printer_name);
+
+
+  papplClientHTMLPrintf(client , "%s", iterator_preset->name);
+
+
+
+
+  if (status)
+  {
+    papplClientHTMLPrintf(client, "<div class=\"banner\">%s</div>\n", papplClientGetLocString(client, status));
+  }
+
+// here we are starting the web forms ... to get data ....
+  papplClientHTMLStartForm(client, client->uri, false);
+  printf("the client uri that we have  --- %s \n", client->uri);
+
+  papplClientHTMLPuts(client,
+		      "          <table class=\"form\">\n"
+		      "            <tbody>\n");
+
+
+
+
+  // media-col-default
+  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "media"));
+
+  if (data.num_source > 1)
+  {
+    papplClientHTMLPuts(client, "<select name=\"media-source\">");
+
+    for (i = 0; i < data.num_source; i ++)
+    {
+      // See if any two sources have the same size...
+      for (j = i + 1; j < data.num_source; j ++)
+      {
+	if (iterator_preset->media_ready[i].size_width > 0 && iterator_preset->media_ready[i].size_width == iterator_preset->media_ready[j].size_width && iterator_preset->media_ready[i].size_length == iterator_preset->media_ready[j].size_length)
+	{
+	  show_source = true;
+	  break;
+	}
+      }
+    }
+
+    for (i = 0; i < data.num_source; i ++)
+    {
+      keyword = data.source[i];
+
+      if (strcmp(keyword, "manual"))
+      {
+	papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", keyword, !strcmp(keyword, iterator_preset->media_default.source) ? " selected" : "", localize_media(client, iterator_preset->media_ready + i, show_source, text, sizeof(text)));
+      }
+    }
+    papplClientHTMLPuts(client, "</select>");
+  }
+  else
+    papplClientHTMLEscape(client, localize_media(client, iterator_preset->media_ready, false, text, sizeof(text)), 0);
+
+  papplClientHTMLPrintf(client, " <a class=\"btn\" href=\"%s/media\">%s</a></td></tr>\n", printer->uriname, papplClientGetLocString(client, _PAPPL_LOC("Configure Media")));
+
+
+
+
+  // orientation-requested-default
+  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "orientation-requested"));
+  for (i = IPP_ORIENT_PORTRAIT; i <= IPP_ORIENT_NONE; i ++)
+  {
+    papplClientHTMLPrintf(client, "<label class=\"image\"><input type=\"radio\" name=\"orientation-requested\" value=\"%d\"%s> <img src=\"data:image/svg+xml,%s\" alt=\"%s\"></label> ", i, iterator_preset->orient_default == (ipp_orient_t)i ? " checked" : "", orient_svgs[i - IPP_ORIENT_PORTRAIT], orients[i - IPP_ORIENT_PORTRAIT]);
+  }
+  papplClientHTMLPuts(client, "</td></tr>\n");
+
+
+
+
+
+
+
+
+// print-color-mode-default
+  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-color-mode"));
+  if (data.color_supported == (PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_MONOCHROME) || data.color_supported == (PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_MONOCHROME | PAPPL_COLOR_MODE_AUTO_MONOCHROME))
+  {
+    papplClientHTMLPuts(client, "B&amp;W");
+  }
+  else
+  {
+    for (i = PAPPL_COLOR_MODE_AUTO; i <= PAPPL_COLOR_MODE_PROCESS_MONOCHROME; i *= 2)
+    {
+      if ((data.color_supported & (pappl_color_mode_t)i) && i != PAPPL_COLOR_MODE_AUTO_MONOCHROME)
+      {
+	keyword = _papplColorModeString((pappl_color_mode_t)i);
+	papplClientHTMLPrintf(client, "<label><input type=\"radio\" name=\"print-color-mode\" value=\"%s\"%s> %s</label> ", keyword, (pappl_color_mode_t)i == iterator_preset->color_default ? " checked" : "", localize_keyword(client, "print-color-mode", keyword, text, sizeof(text)));
+      }
+    }
+  }
+  papplClientHTMLPuts(client, "</td></tr>\n");
+
+  if (data.sides_supported && data.sides_supported != PAPPL_SIDES_ONE_SIDED)
+  {
+    // sides-default
+    papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "sides"));
+    for (i = PAPPL_SIDES_ONE_SIDED; i <= PAPPL_SIDES_TWO_SIDED_SHORT_EDGE; i *= 2)
+    {
+      if (data.sides_supported & (pappl_sides_t)i)
+      {
+	keyword = _papplSidesString((pappl_sides_t)i);
+	papplClientHTMLPrintf(client, "<label><input type=\"radio\" name=\"sides\" value=\"%s\"%s> %s</label> ", keyword, (pappl_sides_t)i == iterator_preset->sides_default ? " checked" : "", localize_keyword(client, "sides", keyword, text, sizeof(text)));
+      }
+    }
+    papplClientHTMLPuts(client, "</td></tr>\n");
+  }
+
+  // // print-color-mode-default
+  // papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-color-mode"));
+  // if (data.color_supported == (PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_MONOCHROME) || data.color_supported == (PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_MONOCHROME | PAPPL_COLOR_MODE_AUTO_MONOCHROME))
+  // {
+  //   papplClientHTMLPuts(client, "B&amp;W");
+  // }
+  // else
+  // {
+  //   for (i = PAPPL_COLOR_MODE_AUTO; i <= PAPPL_COLOR_MODE_PROCESS_MONOCHROME; i *= 2)
+  //   {
+  //     if ((data.color_supported & (pappl_color_mode_t)i) && i != PAPPL_COLOR_MODE_AUTO_MONOCHROME)
+  //     {
+	// keyword = _papplColorModeString((pappl_color_mode_t)i);
+	// papplClientHTMLPrintf(client, "<label><input type=\"radio\" name=\"print-color-mode\" value=\"%s\"%s> %s</label> ", keyword, (pappl_color_mode_t)i == iterator_preset->color_default ? " checked" : "", localize_keyword(client, "print-color-mode", keyword, text, sizeof(text)));
+  //     }
+  //   }
+  // }
+  // papplClientHTMLPuts(client, "</td></tr>\n");
+
+  // if (data.sides_supported && data.sides_supported != PAPPL_SIDES_ONE_SIDED)
+  // {
+  //   // sides-default
+  //   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "sides"));
+  //   for (i = PAPPL_SIDES_ONE_SIDED; i <= PAPPL_SIDES_TWO_SIDED_SHORT_EDGE; i *= 2)
+  //   {
+  //     if (data.sides_supported & (pappl_sides_t)i)
+  //     {
+	// keyword = _papplSidesString((pappl_sides_t)i);
+	// papplClientHTMLPrintf(client, "<label><input type=\"radio\" name=\"sides\" value=\"%s\"%s> %s</label> ", keyword, (pappl_sides_t)i == iterator_preset->sides_default ? " checked" : "", localize_keyword(client, "sides", keyword, text, sizeof(text)));
+  //     }
+  //   }
+  //   papplClientHTMLPuts(client, "</td></tr>\n");
+  // }
+
+
+
+  // output-bin-default
+  if (iterator_preset->num_bin > 0)
+  {
+    papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "output-bin"));
+    if (iterator_preset->num_bin > 1)
+    {
+      papplClientHTMLPuts(client, "<select name=\"output-bin\">");
+      for (i = 0; i < iterator_preset->num_bin; i ++)
+	papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", iterator_preset->bin[i], i == iterator_preset->bin_default ? " selected" : "", localize_keyword(client, "output-bin", iterator_preset->bin[i], text, sizeof(text)));
+      papplClientHTMLPuts(client, "</select>");
+    }
+    else
+    {
+      papplClientHTMLPrintf(client, "%s", localize_keyword(client, "output-bin", iterator_preset->bin[iterator_preset->bin_default], text, sizeof(text)));
+    }
+    papplClientHTMLPuts(client, "</td></tr>\n");
   }
 
 
 
-  printf("    \n");
-  printf("   \n");
+  // print-quality-default
+  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-quality"));
+  for (i = IPP_QUALITY_DRAFT; i <= IPP_QUALITY_HIGH; i ++)
+  {
+    keyword = ippEnumString("print-quality", i);
+
+    papplClientHTMLPrintf(client, "<label><input type=\"radio\" name=\"print-quality\" value=\"%s\"%s> %s</label> ", keyword, (ipp_quality_t)i == iterator_preset->quality_default ? " checked" : "", localize_keyword(client, "print-quality", keyword, text, sizeof(text)));
+  }
+  papplClientHTMLPuts(client, "</select></td></tr>\n");
+
+
+
+  // print-darkness-configured
+  if (data.darkness_supported)
+  {
+    papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td><select name=\"print-darkness\">", papplClientGetLocString(client, "print-darkness"));
+    for (i = 0; i < data.darkness_supported; i ++)
+    {
+      int percent = 100 * i / (data.darkness_supported - 1);
+					// Percent darkness
+
+      papplClientHTMLPrintf(client, "<option value=\"%d\"%s>%d%%</option>", percent, percent == iterator_preset->darkness_configured ? " selected" : "", percent);
+    }
+    papplClientHTMLPuts(client, "</select></td></tr>\n");
+  }
+
+
+
+  // print-speed-default
+  if (data.speed_supported[1])
+  {
+    papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td><select name=\"print-speed\"><option value=\"0\">%s</option>", papplClientGetLocString(client, "print-speed"), papplClientGetLocString(client, _PAPPL_LOC("Auto")));
+    for (i = data.speed_supported[0]; i <= data.speed_supported[1]; i += 2540)
+    {
+      if (i > 0)
+      {
+        papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), i > 2540 ? _PAPPL_LOC("%d inches/sec") : _PAPPL_LOC("%d inch/sec"), i / 2540);
+	papplClientHTMLPrintf(client, "<option value=\"%d\"%s>%s</option>", i / 2540, i == iterator_preset->speed_default ? " selected" : "", text);
+      }
+    }
+    papplClientHTMLPuts(client, "</select></td></tr>\n");
+  }
+
+
+
+
+  // print-content-optimize-default
+  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td><select name=\"print-content-optimize\">", papplClientGetLocString(client, "print-content-optimize"));
+  for (i = PAPPL_CONTENT_AUTO; i <= PAPPL_CONTENT_TEXT_AND_GRAPHIC; i *= 2)
+  {
+    keyword = _papplContentString((pappl_content_t)i);
+    papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", keyword, (pappl_content_t)i == iterator_preset->content_default ? " selected" : "", localize_keyword(client, "print-content-optimize", keyword, text, sizeof(text)));
+  }
+  papplClientHTMLPuts(client, "</select></td></tr>\n");
+
+
+  // print-scaling-default
+  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td><select name=\"print-scaling\">", papplClientGetLocString(client, "print-scaling"));
+  for (i = PAPPL_SCALING_AUTO; i <= PAPPL_SCALING_NONE; i *= 2)
+  {
+    keyword = _papplScalingString((pappl_scaling_t)i);
+    papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", keyword, (pappl_scaling_t)i == iterator_preset->scaling_default ? " selected" : "", localize_keyword(client, "print-scaling", keyword, text, sizeof(text)));
+  }
+  papplClientHTMLPuts(client, "</select></td></tr>\n");
+
+
+  // printer-resolution-default
+  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "printer-resolution"));
+
+  if (data.num_resolution == 1)
+  {
+    if (data.x_resolution[0] != data.y_resolution[0])
+      papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%dx%ddpi")), data.x_resolution[0], data.y_resolution[0]);
+    else
+      papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%ddpi")), data.x_resolution[0]);
+  }
+  else
+  {
+    papplClientHTMLPuts(client, "<select name=\"printer-resolution\">");
+    for (i = 0; i < data.num_resolution; i ++)
+    {
+      if (data.x_resolution[i] != data.y_resolution[i])
+        papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%dx%ddpi"), data.x_resolution[i], data.y_resolution[i]);
+      else
+	papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%ddpi"), data.x_resolution[i]);
+
+      papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", text, (iterator_preset->x_default == data.x_resolution[i] && iterator_preset->y_default == data.y_resolution[i]) ? " selected" : "", text);
+    }
+    papplClientHTMLPuts(client, "</select>");
+  }
+  papplClientHTMLPuts(client, "</td></tr>\n");
+
+
+
+  // printf("Number of vendor Options available in the preset %s are ---  %d\n", iterator_preset->name, iterator_preset->num_vendor);
+  // for(int x = 0 ; x < data.num_vendor; x++)
+  // {
+  //   // write the logic to print number of vendors over here ...
+
+  //   printf("The preset contains this text --- %s\n" , iterator_preset->vendor[x]);
+  // }
+
+  // Vendor options
+  _papplRWLockRead(printer);
+
+  for (i = 0; i < data.num_vendor; i ++)
+  {
+
+    /* initialize the variables and setting the different variables ...
+    */
+    char	defname[128],		// xxx-default name
+		defvalue[1024],		// xxx-default value
+		supname[128];		// xxx-supported name
+    ipp_attribute_t *defattr,		// xxx-default attribute
+	      	*supattr;		// xxx-supported attribute
+    int		count;			// Number of values
+
+    snprintf(defname, sizeof(defname), "%s-default", data.vendor[i]);
+    snprintf(supname, sizeof(defname), "%s-supported", data.vendor[i]);
+
+
+    /*
+     * Here we just pullout the attribute from the preset ...
+     */
+
+
+    if ((defattr = ippFindAttribute(iterator_preset->driver_attrs, defname, IPP_TAG_ZERO)) != NULL)
+    {
+      // printf("Yes this is working fine ... \n");
+      ippAttributeString(defattr, defvalue, sizeof(defvalue));
+    }
+      
+    else
+      defvalue[0] = '\0';
+
+    papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, data.vendor[i]));
+
+    printf(" The value for %s --- is --- %s\n", defname, defvalue);
+
+    if ((supattr = ippFindAttribute(printer->driver_attrs, supname, IPP_TAG_ZERO)) != NULL)
+    {
+       printf(" in the if condition value is --  %s\n",  defvalue);
+       printf("   \n");
+
+      count = (int)ippGetCount(supattr);
+
+      switch (ippGetValueTag(supattr))
+      {
+        case IPP_TAG_BOOLEAN :
+            papplClientHTMLPrintf(client, "<input type=\"checkbox\" name=\"%s\"%s>", data.vendor[i], !strcmp(defvalue, "true") ? " checked" : "");
+            break;
+
+        case IPP_TAG_INTEGER :
+            papplClientHTMLPrintf(client, "<select name=\"%s\">", data.vendor[i]);
+            for (j = 0; j < count; j ++)
+            {
+              int val = ippGetInteger(supattr, (cups_len_t)j);
+
+	      papplClientHTMLPrintf(client, "<option value=\"%d\"%s>%d</option>", val, val == (int)strtol(defvalue, NULL, 10) ? " selected" : "", val);
+            }
+            papplClientHTMLPuts(client, "</select>");
+            break;
+
+        case IPP_TAG_RANGE :
+            {
+              int upper, lower = ippGetRange(supattr, 0, &upper);
+					// Range
+
+	      papplClientHTMLPrintf(client, "<input type=\"number\" name=\"%s\" min=\"%d\" max=\"%d\" value=\"%s\">", data.vendor[i], lower, upper, defvalue);
+	    }
+            break;
+
+        case IPP_TAG_KEYWORD :
+            papplClientHTMLPrintf(client, "<select name=\"%s\">", data.vendor[i]);
+            for (j = 0; j < count; j ++)
+            {
+              const char *val = ippGetString(supattr, (cups_len_t)j, NULL);
+
+	      papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", val, !strcmp(val, defvalue) ? " selected" : "", localize_keyword(client, data.vendor[i], val, text, sizeof(text)));
+            }
+            papplClientHTMLPuts(client, "</select>");
+            break;
+
+	default :
+	    papplClientHTMLPuts(client, "Unsupported value syntax.");
+	    break;
+      }
+    }
+    else
+    {
+       printf(" in the else condition value is --  %s\n",  defvalue);
+       printf("   \n");
+      // Text option
+      papplClientHTMLPrintf(client, "<input type=\"text\" name=\"%s\" value=\"%s\">", data.vendor[i], defvalue);
+    }
+
+    papplClientHTMLPuts(client, "</td></tr>\n");
+  }
+
+  _papplRWUnlock(printer);
+
+  papplClientHTMLPrintf(client,
+                        "              <tr><th></th><td><input type=\"submit\" value=\"%s\"></td></tr>\n"
+                        "            </tbody>\n"
+                        "          </table>"
+                        "        </form>\n", papplClientGetLocString(client, _PAPPL_LOC("Save")));
+
+  papplClientHTMLPrinterFooter(client);
+
+  
+}
+
+
+// write method to create preset...
+
+void _papplPrinterPresetCreate(
+  pappl_client_t *client,
+  pappl_printer_t *printer
+)
+{
+
+  // here we fetch data from the driver ....
+
+
+
+  int			i, j;		// Looping vars
+  pappl_pr_driver_data_t data;		// Driver data
+  const char		*keyword;	// Current keyword
+  char			text[256];	// Localized text for keyword
+  const char		*status = NULL;	// Status message, if any
+  bool			show_source = false;
+					// Show the media source?
+  static const char * const orients[] =	// orientation-requested strings
+  {
+    _PAPPL_LOC("Portrait"),
+    _PAPPL_LOC("Landscape"),
+    _PAPPL_LOC("Reverse Landscape"),
+    _PAPPL_LOC("Reverse Portrait"),
+    _PAPPL_LOC("Auto")
+  };
+  static const char * const orient_svgs[] =
+  {					// orientation-requested images
+    "%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='24' viewBox='0 0 18 24'%3e%3crect fill='rgba(255,255,255,.5)' stroke='currentColor' stroke-width='1' x='0' y='0' width='18' height='24' rx='5' ry='5'/%3e%3ctext x='3' y='18' font-size='18' fill='currentColor' rotate='0'%3eA%3c/text%3e%3c/svg%3e",
+    "%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='24' viewBox='0 0 18 24'%3e%3crect fill='rgba(255,255,255,.5)' stroke='currentColor' stroke-width='1' x='0' y='0' width='18' height='24' rx='5' ry='5'/%3e%3ctext x='15' y='19' font-size='18' fill='currentColor' rotate='-90'%3eA%3c/text%3e%3c/svg%3e",
+    "%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='24' viewBox='0 0 18 24'%3e%3crect fill='rgba(255,255,255,.5)' stroke='currentColor' stroke-width='1' x='0' y='0' width='18' height='24' rx='5' ry='5'/%3e%3ctext x='3' y='6' font-size='18' fill='currentColor' rotate='90'%3eA%3c/text%3e%3c/svg%3e",
+    "%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='24' viewBox='0 0 18 24'%3e%3crect fill='rgba(255,255,255,.5)' stroke='currentColor' stroke-width='1' x='0' y='0' width='18' height='24' rx='5' ry='5'/%3e%3ctext x='15' y='7' font-size='18' fill='currentColor' rotate='180'%3eA%3c/text%3e%3c/svg%3e",
+    "%3csvg xmlns='http://www.w3.org/2000/svg' width='18' height='24' viewBox='0 0 18 24'%3e%3crect fill='rgba(255,255,255,.5)' stroke='currentColor' stroke-width='1' x='0' y='0' width='18' height='24' rx='5' ry='5'/%3e%3ctext x='5' y='18' font-size='18' fill='currentColor' rotate='0'%3e?%3c/text%3e%3c/svg%3e"
+  };
+
+
+
+  // checking whether we have authorized client or not ....
+
+  if (!papplClientHTMLAuthorize(client))
+    return;
+
+
+
+  
+
 
   // get all the driver data over here ...
   papplPrinterGetDriverData(printer, &data);
 
- 
+  printf("the Name of the Printer --- %s\n", printer->name);
     /*
      *   here we are saving the data ... using the POST Method ...
      *
@@ -792,19 +1422,6 @@ papplClientHTMLPrintf(client,
 
   papplClientHTMLPrinterFooter(client);
 
-  
-}
-
-
-// write method to create preset...
-
-void _papplPrinterPresetCreate(
-  pappl_client_t *client,
-  pappl_printer_t *printer
-)
-{
-
-  // here we fetch data from the driver ....
 
 
 
@@ -833,6 +1450,15 @@ _papplPrinterWebDefaults(
   const char		*status = NULL;	// Status message, if any
   bool			show_source = false;
 					// Show the media source?
+
+
+
+
+
+
+
+
+
   static const char * const orients[] =	// orientation-requested strings
   {
     _PAPPL_LOC("Portrait"),
@@ -1012,7 +1638,7 @@ _papplPrinterWebDefaults(
     papplClientHTMLPrintf(client, "<div class=\"banner\">%s</div>\n", papplClientGetLocString(client, status));
   }
 
-// here we are starting the web form ... to get data ....
+  // here we are starting the web form ... to get data ....
   papplClientHTMLStartForm(client, client->uri, false);
   printf("the client uri that we have  --- %s \n", client->uri);
 
@@ -1063,6 +1689,9 @@ _papplPrinterWebDefaults(
     papplClientHTMLPrintf(client, "<label class=\"image\"><input type=\"radio\" name=\"orientation-requested\" value=\"%d\"%s> <img src=\"data:image/svg+xml,%s\" alt=\"%s\"></label> ", i, data.orient_default == (ipp_orient_t)i ? " checked" : "", orient_svgs[i - IPP_ORIENT_PORTRAIT], orients[i - IPP_ORIENT_PORTRAIT]);
   }
   papplClientHTMLPuts(client, "</td></tr>\n");
+
+
+
 
   // print-color-mode-default
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-color-mode"));
@@ -1582,6 +2211,13 @@ _papplPrinterWebIteratorCallback(
   printer_reasons = papplPrinterGetReasons(printer);
 
   snprintf(uri, sizeof(uri), "%s/", printer->uriname);
+
+  printf(" The value of uri ---- in iterator callback is --- %s\n", uri);
+  printf(" The value of client uri ---- in iterator callback is --- %s\n", client->uri);
+  printf(" The value of printer uri ---- in iterator callback is --- %s\n", printer->uriname);
+
+
+
 
 
   // this represent that delete button on the printer that we have ...

@@ -193,7 +193,7 @@ papplSystemLoadState(
         // printf("this means printer is created successfully with the given credentials \n");
 
    
-        papplPresetAdd(system, printer);
+        // papplPresetAdd(system, printer);
 
       }
 
@@ -305,7 +305,13 @@ papplSystemLoadState(
           snprintf(supname, sizeof(supname), "%s-supported", line);
 
           if (!value)
+          {
             value = ptr;
+          }
+
+
+            // printf("the value of value in vendor option when legacy --- %s \n", value);
+            
 
 	  ippDeleteAttribute(printer->driver_attrs, ippFindAttribute(printer->driver_attrs, defname, IPP_TAG_ZERO));
 
@@ -335,6 +341,10 @@ papplSystemLoadState(
             ippAddString(printer->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_TEXT, defname, NULL, value);
           }
         }
+
+
+
+
 	else if (!strcasecmp(line, "Job") && value)
 	{
 	  // Read printer job

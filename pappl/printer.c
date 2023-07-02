@@ -428,11 +428,15 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
               *preset_id;
 
               pappl_pr_preset_data_t *preset; // current preset
+              
+              
                 // Allocate memory for the printer...
               if ((preset = calloc(1, sizeof(pappl_pr_preset_data_t))) == NULL)
               {
                 printf("Allocate memory for preset fails ... \n");
               }
+
+              preset->driver_attrs = ippNew();
                       
               if ((num_options = cupsParseOptions(value, 0, &options)) != 2 || (preset_id= cupsGetOption("id", num_options, options)) == NULL || strtol(preset_id, NULL, 10) <= 0 || (preset_name = cupsGetOption("name", num_options, options)) == NULL )
               {
@@ -516,47 +520,81 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
                     preset->sides_default = _papplSidesValue(value);
 
 
-                  // now set vendor attributes ...
+                  // // now set vendor attributes ...
                   else if ((ptr = strstr(line, "-default")) != NULL)
                   {
+                    // printf("the vendor options are called --- %s\n", line);
                     char	defname[128],		// xxx-default name
                     supname[128];		// xxx-supported name
-              ipp_attribute_t *attr;	// Attribute
+                    ipp_attribute_t *attr;	// Attribute
 
                     *ptr = '\0';
 
                     snprintf(defname, sizeof(defname), "%s-default", line);
                     snprintf(supname, sizeof(supname), "%s-supported", line);
 
+                    printf("THE VALUE OF DEFNAME --- %s\n", defname);
+                    printf("The VALUE OF SUPNAME --- %s\n", supname);
+                   
+                   
+                    
+                    // these are written in the file ... the preset one and the legacy file ...
+
+                    // the below will check whether we have some value in value variable .... if not then assgin it with line null pointer
                     if (!value)
-                      value = ptr;
-
-              ippDeleteAttribute(preset->vendor_attrs, ippFindAttribute(preset->vendor_attrs, defname, IPP_TAG_ZERO));
-
-                    if ((attr = ippFindAttribute(preset->vendor_attrs, supname, IPP_TAG_ZERO)) != NULL)
                     {
+                         value = ptr;
+                          printf("the value of value is -- %s\n", value);
+
+                    }
+                      
+                   
+
+                    // We delete the particular value in preset --- because we want to overrite in the structure with that ... memory overwritten check ...
+
+                    ippDeleteAttribute(preset->driver_attrs, ippFindAttribute(preset->driver_attrs, defname, IPP_TAG_ZERO));
+
+
+
+
+                    // when we won't be able to find presets in the printer ... itself ..
+                    if ((attr = ippFindAttribute(printer->driver_attrs, supname, IPP_TAG_ZERO)) != NULL)
+                    {
+                      
+                      // printf("FOR  supname --- %s the the printer contains its declaration ..\n  ", supname);
+                      //  printf("  \n");
+
                       switch (ippGetValueTag(attr))
                       {
                         case IPP_TAG_BOOLEAN :
-                            ippAddBoolean(preset->vendor_attrs, IPP_TAG_PRINTER, defname, !strcmp(value, "true"));
+                            printf("So the IPP_TAG_BOOLEAN is called ...\n");
+                            printf("    \n");
+                            ippAddBoolean(preset->driver_attrs, IPP_TAG_PRINTER, defname, !strcmp(value, "true"));
                             break;
 
                         case IPP_TAG_INTEGER :
                         case IPP_TAG_RANGE :
-                            ippAddInteger(preset->vendor_attrs, IPP_TAG_PRINTER, IPP_TAG_INTEGER, defname, (int)strtol(value, NULL, 10));
+                            ippAddInteger(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_INTEGER, defname, (int)strtol(value, NULL, 10));
+                             printf("So the IPP_TAG_INTEGER AND RANGE is called ...\n");
+                            printf("    \n");
                             break;
 
                         case IPP_TAG_KEYWORD :
-                ippAddString(preset->vendor_attrs, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, defname, NULL, value);
-                            break;
+                            ippAddString(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, defname, NULL, value);
+                             printf("So the IPP_TAG_KEYWORD is called ...\n");
+                            printf("    \n");
+                                        break;
 
                         default :
                             break;
                       }
-              }
+                    }
                     else
                     {
-                      ippAddString(preset->vendor_attrs, IPP_TAG_PRINTER, IPP_TAG_TEXT, defname, NULL, value);
+                      // printf("The else part is working in adding the attribute to preset object ...\n");
+                    
+                      ippAddString(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_TEXT, defname, NULL, value);
+
                     }
                   }
 
@@ -574,15 +612,6 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
 
 
     }
-
-   
-
-    // // in the above statement you grab a particular line .... what you want to do at that time ...
-    // if(!strcasecmp(line, "</Printer>"))
-    // {
-    //   printf(" the break for printer executed ... \n");
-    //   break;
-    // }
 
   }
   
@@ -1149,9 +1178,17 @@ papplPrinterCreate(
   // which-jobs-supported
   ippAddStrings(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "which-jobs-supported", sizeof(which_jobs) / sizeof(which_jobs[0]), NULL, which_jobs);
 
+
+
+
+
   // Initialize driver and driver-specific attributes...
   driver_attrs = NULL;
   _papplPrinterInitDriverData(&driver_data);
+
+  pappl_pr_preset_data_t preset;
+  // _papplPrinterInitPresetData(&preset);
+
 
   if (!(system->driver_cb)(system, driver_name, device_uri, device_id, &driver_data, &driver_attrs, system->driver_cbdata))
   {
@@ -1160,7 +1197,21 @@ papplPrinterCreate(
     return (NULL);
   }
 
+  
+
+
+  // preset.num_source = driver_data.num_source;
+  // preset.source = driver_data.source;
+
+
+
+
   papplPrinterSetDriverData(printer, &driver_data, driver_attrs);
+
+  // create the preset object over here itself .... and modify it with important things ...
+
+  papplPresetAdd(system, printer);
+
   ippDelete(driver_attrs);
 
   // here call the api to fetch presets from file...
@@ -1168,6 +1219,7 @@ papplPrinterCreate(
 
   // Add the printer to the system...
   _papplSystemAddPrinter(system, printer, printer_id);
+
 
 
       
@@ -1205,6 +1257,9 @@ papplPrinterCreate(
     }
   }
 
+
+
+
   // Add icons...
   _papplSystemAddPrinterIcons(system, printer);
 
@@ -1233,10 +1288,26 @@ papplPrinterCreate(
     papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterWebMedia, printer);
     papplPrinterAddLink(printer, _PAPPL_LOC("Media"), path, PAPPL_LOPTIONS_NAVIGATION | PAPPL_LOPTIONS_STATUS);
 
+
+
+
+
+
+
+
+
+
+
+
+
 // ---------------------------------------------//
 
-    // add resource for creating and listing preset page page ...
-    // it must have a button with printing defaults...
+
+    /*
+    * add resource for creating and listing preset page page ...
+    * it must have a button with printing defaults...
+
+    */
     
     snprintf(path, sizeof(path), "%s/presets", printer->uriname);
     // this add the content 
@@ -1246,13 +1317,51 @@ papplPrinterCreate(
     papplPrinterAddLink(printer, _PAPPL_LOC("Presets"), path, PAPPL_LOPTIONS_NAVIGATION | PAPPL_LOPTIONS_STATUS);
 
     
-    // add saving preset page ...
-    snprintf(path, sizeof(path), "%s/presets/create", printer->uriname);
-    // this add the content 
-    papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, printer);
+
+
+
+    // Create button page ------ localhost:8000/printer/presets/create.
+    // snprintf(path, sizeof(path), "%s/presets/create", printer->uriname);
+    // // this add the content 
+    // papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, printer);
+
+
+
+
+    /*
+     *  run a for loop and add all the preset links on each route ...
+     */
+    
+
+    cups_len_t preset_iterator, preset_count;
+    preset_count = cupsArrayGetCount(printer->presets);
+
+    // printf("THEeeeeeeeeeeeeeeeeeeee numbbbbbbbb ---- %d\n", preset_count);
+    for(preset_iterator = 0; preset_iterator < preset_count; preset_iterator++)
+    {
+       pappl_pr_preset_data_t * preset = cupsArrayGetElement(printer->presets, preset_iterator);
+       // run each preset on specific route ...
+       snprintf(path, sizeof(path), "%s/presets/%s", printer->uriname , preset->name);
+
+      //  printf("Theeeeeeeeeeeeeeeee Uriiiiiiiii -- %s\n", path);
+       // this add the content 
+
+       resource_data_t *resource_data = calloc(1, sizeof(resource_data_t));
+       resource_data->printer = printer;
+       resource_data->preset_name = preset->name;
+       
+       papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
+
+    }
+   
+
+
+
 
   
 // ----------------------------------------------//
+
+
 
     snprintf(path, sizeof(path), "%s/printing", printer->uriname);
     papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterWebDefaults, printer);
@@ -1271,6 +1380,8 @@ papplPrinterCreate(
   // Return it!
   return (printer);
 }
+
+
 
 
 //

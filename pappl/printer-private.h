@@ -139,6 +139,7 @@ extern void		_papplPrinterCopyStateNoLock(pappl_printer_t *printer, ipp_tag_t gr
 extern void		_papplPrinterCopyXRINoLock(pappl_printer_t *printer, ipp_t *ipp, pappl_client_t *client) _PAPPL_PRIVATE;
 extern void		_papplPrinterDelete(pappl_printer_t *printer) _PAPPL_PRIVATE;
 extern void		_papplPrinterInitDriverData(pappl_pr_driver_data_t *d) _PAPPL_PRIVATE;
+extern void		_papplPrinterInitPresetData(pappl_pr_preset_data_t *d) _PAPPL_PRIVATE;
 extern bool		_papplPrinterIsAuthorized(pappl_client_t *client) _PAPPL_PRIVATE;
 extern void		_papplPrinterProcessIPP(pappl_client_t *client) _PAPPL_PRIVATE;
 extern bool		_papplPrinterRegisterDNSSDNoLock(pappl_printer_t *printer) _PAPPL_PRIVATE;
@@ -156,7 +157,7 @@ extern void		_papplPrinterWebJobs(pappl_client_t *client, pappl_printer_t *print
 extern void		_papplPrinterWebMedia(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
 extern void		_papplPrinterWebSupplies(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
 extern void		_papplPrinterPreset(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
-extern void		_papplPrinterPresetEdit(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
+extern void		_papplPrinterPresetEdit(pappl_client_t *client, resource_data_t * resource_data) _PAPPL_PRIVATE;
 
 extern const char	*_papplColorModeString(pappl_color_mode_t value) _PAPPL_PRIVATE;
 extern pappl_color_mode_t _papplColorModeValue(const char *value) _PAPPL_PRIVATE;

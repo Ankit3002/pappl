@@ -782,7 +782,7 @@ _papplMainloopRunServer(
 
     papplSystemSetSaveCallback(system, (pappl_save_cb_t)papplSystemSaveState, (void *)statename);
 
-    printf("the load state value is -- %d\n", papplSystemLoadState(system, statename) );
+    // printf("the load state value is -- %d\n", papplSystemLoadState(system, statename) );
     if (!papplSystemLoadState(system, statename) && autoadd_cb)
     {
       // If there is no state file, auto-add locally-connected printers...
