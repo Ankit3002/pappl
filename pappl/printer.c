@@ -359,7 +359,6 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
 {
 
       /// for doing printer validation ...
-    
 
       //variables ..
       int i;
@@ -427,7 +426,7 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
               const char *preset_name,
               *preset_id;
 
-              pappl_pr_preset_data_t *preset; // current preset
+              pappl_pr_preset_data_t *preset = calloc(1, sizeof(pappl_pr_preset_data_t)); // current preset
               
               
                 // Allocate memory for the printer...
@@ -592,7 +591,6 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
                     else
                     {
                       // printf("The else part is working in adding the attribute to preset object ...\n");
-                    
                       ippAddString(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_TEXT, defname, NULL, value);
 
                     }
@@ -1197,15 +1195,6 @@ papplPrinterCreate(
     return (NULL);
   }
 
-  
-
-
-  // preset.num_source = driver_data.num_source;
-  // preset.source = driver_data.source;
-
-
-
-
   papplPrinterSetDriverData(printer, &driver_data, driver_attrs);
 
   // create the preset object over here itself .... and modify it with important things ...
@@ -1289,22 +1278,9 @@ papplPrinterCreate(
     papplPrinterAddLink(printer, _PAPPL_LOC("Media"), path, PAPPL_LOPTIONS_NAVIGATION | PAPPL_LOPTIONS_STATUS);
 
 
-
-
-
-
-
-
-
-
-
-
-
 // ---------------------------------------------//
-
-
     /*
-    * add resource for creating and listing preset page page ...
+    * add resource for creating and listing preset page ..
     * it must have a button with printing defaults...
 
     */
@@ -1313,38 +1289,25 @@ papplPrinterCreate(
     // this add the content 
     papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPreset, printer);
     // this add button link...
-    printf("The Uri added to create (listing and create page ) at  %s\n", path);  // path value --- /ll/presets
     papplPrinterAddLink(printer, _PAPPL_LOC("Presets"), path, PAPPL_LOPTIONS_NAVIGATION | PAPPL_LOPTIONS_STATUS);
 
-    
-
-
-
     // Create button page ------ localhost:8000/printer/presets/create.
-    // snprintf(path, sizeof(path), "%s/presets/create", printer->uriname);
-    // // this add the content 
-    // papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, printer);
-
-
-
+    snprintf(path, sizeof(path), "%s/presets/create", printer->uriname);
+    // this add the content 
+    papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetCreate, printer);
 
     /*
      *  run a for loop and add all the preset links on each route ...
      */
     
-
     cups_len_t preset_iterator, preset_count;
     preset_count = cupsArrayGetCount(printer->presets);
 
-    // printf("THEeeeeeeeeeeeeeeeeeeee numbbbbbbbb ---- %d\n", preset_count);
     for(preset_iterator = 0; preset_iterator < preset_count; preset_iterator++)
     {
        pappl_pr_preset_data_t * preset = cupsArrayGetElement(printer->presets, preset_iterator);
        // run each preset on specific route ...
-       snprintf(path, sizeof(path), "%s/presets/%s", printer->uriname , preset->name);
-
-      //  printf("Theeeeeeeeeeeeeeeee Uriiiiiiiii -- %s\n", path);
-       // this add the content 
+       snprintf(path, sizeof(path), "%s/presets/%s/edit", printer->uriname , preset->name);
 
        resource_data_t *resource_data = calloc(1, sizeof(resource_data_t));
        resource_data->printer = printer;
@@ -1353,12 +1316,6 @@ papplPrinterCreate(
        papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
 
     }
-   
-
-
-
-
-  
 // ----------------------------------------------//
 
 

@@ -270,6 +270,8 @@ papplPrinterSetDriverData(
 }
 
 
+
+
 //
 // 'papplPrinterSetDriverDefaults()' - Set the default print option values.
 //
@@ -371,6 +373,75 @@ papplPrinterSetDriverDefaults(
 
   return (true);
 }
+
+
+
+// create api to set preset data into the current printer preset object ...
+
+//
+// 'papplPrinterSetDriverDefaults()' - Set the default print option values.
+//
+// This function validates and sets the printer's default print options.
+//
+// > Note: Unlike @link papplPrinterSetPrintDriverData@, this function only
+// > changes the "xxx_default" members of the driver data and is considered
+// > lightweight.
+//
+
+bool					// O - `true` on success or `false` on failure
+papplPrinterSetPresetsDefaults(
+    pappl_printer_t        *printer,	// I - Printer
+    pappl_pr_preset_data_t *data,	// I - Driver data
+    int                    num_vendor,	// I - Number of vendor options
+    cups_option_t          *vendor)	// I - Vendor options
+{
+  int			i;		// Looping var
+  const char		*value;		// Vendor value
+  int			intvalue;	// Integer value
+  char			*end,		// End of value
+ 			defname[128],	// xxx-default name
+			supname[128];	// xxx-supported name
+  ipp_attribute_t	*supported;	// xxx-supported attribute
+
+
+  if (!printer || !data)
+    return (false);
+
+  // if (!validate_defaults(printer, &printer->driver_data, data))
+  //   return (false);
+
+  _papplRWLockWrite(printer);
+
+  // grab the correct preset ...
+
+  // write the logic to grab particular preset ...
+  cups_len_t preset_iterator , preset_count;
+  preset_count = cupsArrayGetCount(printer->presets);
+  pappl_pr_preset_data_t * iterator_preset;
+  for(preset_iterator = 0;preset_iterator < preset_count; preset_iterator++)
+  {
+    iterator_preset = cupsArrayGetElement(printer->presets, preset_iterator);
+    if(!strcasecmp(iterator_preset->name , data->name))
+    {
+        iterator_preset = data;
+        break;
+    }
+      
+  }
+
+
+
+
+  printer->config_time = time(NULL);
+
+  _papplRWUnlock(printer);
+
+  _papplSystemConfigChanged(printer->system);
+
+  return (true);
+}
+
+
 
 
 //
