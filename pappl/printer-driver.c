@@ -375,6 +375,138 @@ papplPrinterSetDriverDefaults(
 }
 
 
+// api for storing presets in printer ... in printer thread .... not  the system ...
+
+bool papplPrinterAddPresetCreate( pappl_printer_t * printer , pappl_pr_preset_data_t *preset )
+{
+
+      // instance variables ...
+        char			path[256];	// Path to resource
+
+        _papplRWLockWrite(printer);
+
+        cupsArrayAdd(printer->presets, preset);
+       
+    
+      // //  pappl_pr_preset_data_t * preset = cupsArrayGetElement(printer->presets, preset_iterator);
+      //  // run each preset on specific route ...
+      //  snprintf(path, sizeof(path), "%s/presets/%s/edit", printer->uriname , preset->name);
+
+      //  resource_data_t *resource_data = calloc(1, sizeof(resource_data_t));
+      //  resource_data->printer = printer;
+      //  resource_data->preset_name = preset->name;
+       
+      //  papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
+
+  
+
+        printer->config_time = time(NULL);
+
+        _papplRWUnlock(printer);
+
+        _papplSystemConfigChanged(printer->system);
+}
+
+
+// api for create api of pappl webif ....
+
+
+bool					// O - `true` on success or `false` on failure
+papplPrinterSetPresetFromDriver(
+    pappl_printer_t * printer,
+    pappl_pr_driver_data_t *data,	// I - Driver data
+    pappl_pr_preset_data_t *preset,	// I - Printer
+    int                    num_vendor,	// I - Number of vendor options
+    cups_option_t          *vendor)	// I - Vendor options
+{
+  int			i;		// Looping var
+  const char		*value;		// Vendor value
+  int			intvalue;	// Integer value
+  char			*end,		// End of value
+ 			defname[128],	// xxx-default name
+			supname[128];	// xxx-supported name
+  ipp_attribute_t	*supported;	// xxx-supported attribute
+
+
+  // if (!printer || !data)
+  //   return (false);
+
+  // if (!validate_defaults(printer, &printer->driver_data, data))
+  //   return (false);
+
+  // _papplRWLockWrite(printer);
+
+  // Copy xxx_default values...
+  preset->color_default          = data->color_default;
+  preset->content_default        = data->content_default;
+  preset->quality_default        = data->quality_default;
+  preset->scaling_default        = data->scaling_default;
+  preset->sides_default          = data->sides_default;
+  preset->x_default              = data->x_default;
+  preset->y_default              = data->y_default;
+  preset->media_default          = data->media_default;
+  preset->speed_default          = data->speed_default;
+  preset->darkness_default       = data->darkness_default;
+  preset->bin_default            = data->bin_default;
+  preset->mode_configured        = data->mode_configured;
+  preset->tear_offset_configured = data->tear_offset_configured;
+  preset->darkness_configured    = data->darkness_configured;
+  preset->identify_default       = data->identify_default;
+
+  // Copy any vendor-specific xxx-default values...
+  for (i = 0; i < data->num_vendor; i ++)
+  {
+    if ((value = cupsGetOption(data->vendor[i], (cups_len_t)num_vendor, vendor)) == NULL)
+      continue;
+
+    snprintf(defname, sizeof(defname), "%s-default", data->vendor[i]);
+    snprintf(supname, sizeof(supname), "%s-supported", data->vendor[i]);
+
+    ippDeleteAttribute(preset->driver_attrs, ippFindAttribute(preset->driver_attrs, defname, IPP_TAG_ZERO));
+
+
+
+    if ((supported = ippFindAttribute(printer->driver_attrs, supname, IPP_TAG_ZERO)) != NULL)
+    {
+      switch (ippGetValueTag(supported))
+      {
+        case IPP_TAG_INTEGER :
+        case IPP_TAG_RANGE :
+            intvalue = (int)strtol(value, &end, 10);
+            if (errno != ERANGE && !*end)
+              ippAddInteger(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_INTEGER, defname, intvalue);
+            break;
+
+        case IPP_TAG_BOOLEAN :
+            ippAddBoolean(preset->driver_attrs, IPP_TAG_PRINTER, defname, !strcmp(value, "true") || !strcmp(value, "on"));
+            break;
+
+	case IPP_TAG_KEYWORD :
+	    ippAddString(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, defname, NULL, value);
+	    break;
+
+        default :
+            // papplLogPrinter(printer, PAPPL_LOGLEVEL_ERROR, "Driver '%s' attribute syntax not supported, only boolean, integer, keyword, and rangeOfInteger are supported.", supname);
+            break;
+      }
+    }
+    else
+    {
+      // Default to simple text values...
+      ippAddString(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_TEXT, defname, NULL, value);
+    }
+  }
+
+  // printer->config_time = time(NULL);
+
+  // _papplRWUnlock(printer);
+
+  // _papplSystemConfigChanged(printer->system);
+
+  return (true);
+}
+
+
 
 // create api to set preset data into the current printer preset object ...
 
@@ -412,25 +544,66 @@ papplPrinterSetPresetsDefaults(
 
   _papplRWLockWrite(printer);
 
-  // grab the correct preset ...
+  // // Copy xxx_default values...
+  // printer->driver_data.color_default          = data->color_default;
+  // printer->driver_data.content_default        = data->content_default;
+  // printer->driver_data.quality_default        = data->quality_default;
+  // printer->driver_data.scaling_default        = data->scaling_default;
+  // printer->driver_data.sides_default          = data->sides_default;
+  // printer->driver_data.x_default              = data->x_default;
+  // printer->driver_data.y_default              = data->y_default;
+  // printer->driver_data.media_default          = data->media_default;
+  // printer->driver_data.speed_default          = data->speed_default;
+  // printer->driver_data.darkness_default       = data->darkness_default;
+  // printer->driver_data.bin_default            = data->bin_default;
+  // printer->driver_data.mode_configured        = data->mode_configured;
+  // printer->driver_data.tear_offset_configured = data->tear_offset_configured;
+  // printer->driver_data.darkness_configured    = data->darkness_configured;
+  // printer->driver_data.identify_default       = data->identify_default;
 
-  // write the logic to grab particular preset ...
-  cups_len_t preset_iterator , preset_count;
-  preset_count = cupsArrayGetCount(printer->presets);
-  pappl_pr_preset_data_t * iterator_preset;
-  for(preset_iterator = 0;preset_iterator < preset_count; preset_iterator++)
+  // Copy any vendor-specific xxx-default values...
+  for (i = 0; i < printer->driver_data.num_vendor ; i++)
   {
-    iterator_preset = cupsArrayGetElement(printer->presets, preset_iterator);
-    if(!strcasecmp(iterator_preset->name , data->name))
+    if ((value = cupsGetOption(printer->driver_data.vendor[i], (cups_len_t)num_vendor, vendor)) == NULL)
+      continue;
+
+    snprintf(defname, sizeof(defname), "%s-default",printer->driver_data.vendor[i]);
+    snprintf(supname, sizeof(supname), "%s-supported", printer->driver_data.vendor[i]);
+
+    ippDeleteAttribute(data->driver_attrs, ippFindAttribute(data->driver_attrs, defname, IPP_TAG_ZERO));
+
+    // done till above ...
+
+    if ((supported = ippFindAttribute(printer->driver_attrs, supname, IPP_TAG_ZERO)) != NULL)
     {
-        iterator_preset = data;
-        break;
+      switch (ippGetValueTag(supported))
+      {
+        case IPP_TAG_INTEGER :
+        case IPP_TAG_RANGE :
+            intvalue = (int)strtol(value, &end, 10);
+            if (errno != ERANGE && !*end)
+              ippAddInteger(data->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_INTEGER, defname, intvalue);
+            break;
+
+        case IPP_TAG_BOOLEAN :
+            ippAddBoolean(data->driver_attrs, IPP_TAG_PRINTER, defname, !strcmp(value, "true") || !strcmp(value, "on"));
+            break;
+
+	case IPP_TAG_KEYWORD :
+	    ippAddString(data->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, defname, NULL, value);
+	    break;
+
+        default :
+            papplLogPrinter(printer, PAPPL_LOGLEVEL_ERROR, "Driver '%s' attribute syntax not supported, only boolean, integer, keyword, and rangeOfInteger are supported.", supname);
+            break;
+      }
     }
-      
+    else
+    {
+      // Default to simple text values...
+      ippAddString(data->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_TEXT, defname, NULL, value);
+    }
   }
-
-
-
 
   printer->config_time = time(NULL);
 

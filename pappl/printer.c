@@ -410,8 +410,7 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
 
 
       // // you got those values ...
-      if(!strcasecmp(printer_name, printer->name) 
-        )
+      if(!strcasecmp(printer_name, printer->name))
         {
 
           printf("--------------------you get the right printer buddy---------*******-------\n");
@@ -426,7 +425,7 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
               const char *preset_name,
               *preset_id;
 
-              pappl_pr_preset_data_t *preset = calloc(1, sizeof(pappl_pr_preset_data_t)); // current preset
+              pappl_pr_preset_data_t *preset; // current preset
               
               
                 // Allocate memory for the printer...
@@ -682,14 +681,17 @@ void _papplSystemAddPreset(
 
     if (!printer->presets)
         printer->presets = cupsArrayNew3(NULL, NULL, NULL, 0, NULL, NULL);
+    
 
+ 
     cupsArrayAdd(printer->presets, preset);
 
     _papplRWUnlock(system);
-
+       printf("Checking whether this is working or not .... \n");
     _papplSystemConfigChanged(system);
     // papplSystemAddEvent(system, printer, NULL, PAPPL_EVENT_PRINTER_PRESET_CREATED | PAPPL_EVENT_SYSTEM_CONFIG_CHANGED, NULL);
 }
+
 
 
 

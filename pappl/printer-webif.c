@@ -418,6 +418,8 @@ void _papplPrinterPresetEdit(
       // ssize_t bytes_written = write(ankit_file_descriptor, buf_me, leng);
       // close(ankit_file_descriptor);
 
+
+
       const char	*value;		// Value of form variable
       char		*end;			// End of value
 
@@ -495,18 +497,39 @@ void _papplPrinterPresetEdit(
 
       // save the vendor attributes over here ... ( vendor options ...)
 
-      for (i = 0; i < iterator_preset->num_vendor; i ++)
+      for (i = 0; i < data.num_vendor; i ++)
       {
+
+        // printf("***************  ---- %s ---------------\n", iterator_preset->vendor[i]);
         char	supattr[128];		// xxx-supported
 
-        snprintf(supattr, sizeof(supattr), "%s-supported", iterator_preset->vendor[i]);
+        snprintf(supattr, sizeof(supattr), "%s-supported", data.vendor[i]);
+        // printf("The iterator can make supattr and it's value is ---- %s\n",supattr );
 
-        if ((value = cupsGetOption(iterator_preset->vendor[i], num_form, form)) != NULL)
-	  num_vendor = (int)cupsAddOption(iterator_preset->vendor[i], value, (cups_len_t)num_vendor, &vendor);
-	else if (ippFindAttribute(printer->driver_attrs, supattr, IPP_TAG_BOOLEAN))
-	  num_vendor = (int)cupsAddOption(iterator_preset->vendor[i], "false", (cups_len_t)num_vendor, &vendor);
+        if ((value = cupsGetOption(data.vendor[i], num_form, form)) != NULL)
+        {
+          printf("The if value that get changed in form is ---- %s --- %s\n", value , data.vendor[i]);
+          num_vendor = (int)cupsAddOption(data.vendor[i], value, (cups_len_t)num_vendor, &vendor);
+        }
+
+
+        else if (ippFindAttribute(printer->driver_attrs, supattr, IPP_TAG_BOOLEAN))
+        {
+          printf("The else value that get changed in form is ---- %s --- %s\n", value , data.vendor[i]);
+          num_vendor = (int)cupsAddOption(data.vendor[i], "false", (cups_len_t)num_vendor, &vendor);
+        }
+          
       }
 
+
+    // printf("----    --------------- -----             ----- \n");
+    // printf("the number of num_Vendor -- %d\n", num_vendor);
+    // for(int x = 0;x < num_vendor; x ++)
+    // {
+    //   printf("The value  in vendor ( cups option ) -- name == %s   , value === %s\n", vendor[x].name , vendor[x].value);
+
+
+    // }
   // iterator_preset->name = "wwe";
 
     
@@ -519,7 +542,7 @@ void _papplPrinterPresetEdit(
   // _papplSystemConfigChanged(printer->system);
       // here we are setting the changes .... 
 
-      if (papplPrinterSetPresetsDefaults(printer, &iterator_preset, num_vendor, vendor))
+      if (papplPrinterSetPresetsDefaults(printer, iterator_preset, num_vendor, vendor))
         status = _PAPPL_LOC("Changes saved.");
       else
         status = _PAPPL_LOC("Bad printer defaults.");
@@ -894,14 +917,12 @@ void _papplPrinterPresetEdit(
 // write method to create preset...
 
 void _papplPrinterPresetCreate(
+
   pappl_client_t *client,
-  pappl_printer_t *printer
-)
+  pappl_printer_t *printer)
 {
 
   // here we fetch data from the driver ....
-
-
 
   int			i, j;		// Looping vars
   pappl_pr_driver_data_t data;		// Driver data
@@ -934,11 +955,6 @@ void _papplPrinterPresetCreate(
   if (!papplClientHTMLAuthorize(client))
     return;
 
-
-
-  
-
-
   // get all the driver data over here ...
   papplPrinterGetDriverData(printer, &data);
 
@@ -948,167 +964,147 @@ void _papplPrinterPresetCreate(
      */
 
   // the below is really easy ... just save the form varialbes into the printer instances .... simple and easy ...
-  // if (client->operation == HTTP_STATE_POST)
-  // {
-  //   cups_len_t		num_form = 0;	// Number of form variable
-  //   cups_option_t	*form = NULL;	// Form variables
-  //   int			num_vendor = 0;	// Number of vendor options
-  //   cups_option_t	*vendor = NULL;	// Vendor options
+  if (client->operation == HTTP_STATE_POST)
+  {
+    cups_len_t		num_form = 0;	// Number of form variable
+    cups_option_t	*form = NULL;	// Form variables
+    int			num_vendor = 0;	// Number of vendor options
+    cups_option_t	*vendor = NULL;	// Vendor options
 
-  //   if ((num_form = (cups_len_t)papplClientGetForm(client, &form)) == 0)
-  //   {
-  //     status = _PAPPL_LOC("Invalid form data.");
-  //   }
-  //   else if (!papplClientIsValidForm(client, (int)num_form, form))
-  //   {
-  //     status = _PAPPL_LOC("Invalid form submission.");
-  //   }
+    if ((num_form = (cups_len_t)papplClientGetForm(client, &form)) == 0)
+    {
+      status = _PAPPL_LOC("Invalid form data.");
+    }
+    else if (!papplClientIsValidForm(client, (int)num_form, form))
+    {
+      status = _PAPPL_LOC("Invalid form submission.");
+    }
 
-  //     // after fetching the data from the web forms .... ( here add those into the driver ... ( saving data ))  
-  //   else
-  //   {
-  //     // here save this into the file
+      // after fetching the data from the web forms .... ( here add those into the driver ... ( saving data ))  
+    else
+    {
+      
 
-  //     // use papplFileOpen ---  function to open files and all ....
-
-  //     char something[1024];
-
-  //     char buf_me[8096];
-
-  //     for (size_t i = 0; i < num_form; i++) {
-  //       strcat(buf_me, form[i].name);
-  //       strcat(buf_me, "----");
-  //       strcat(buf_me, form[i].value);
-  //       strcat(buf_me, "\n");
-  //       printf("Option Name in the web default page  : %s\n", form[i].name);
-  //       printf("Option Value in the web defualt page : %s\n", form[i].value);
-  //       printf("\n");
-  //     }
-
-  //     printf("the DATA ---- %s\n", buf_me);
-
-  //     int ankit_file_descriptor;
-  //     ankit_file_descriptor = papplPrinterOpenFile(printer,something, sizeof(something), NULL, "preset_opt", "configuration_me","w");
-
-  //     size_t leng = strlen(buf_me);
-  //     ssize_t bytes_written = write(ankit_file_descriptor, buf_me, leng);
-  //     close(ankit_file_descriptor);
-
-  //     const char	*value;		// Value of form variable
-  //     char		*end;			// End of value
+      const char	*value;		// Value of form variable
+      char		*end;			// End of value
 
 
 
-  //     if ((value = cupsGetOption("orientation-requested", num_form, form)) != NULL)
-  //     {
-  //       data.orient_default = (ipp_orient_t)strtol(value, &end, 10);
+      if ((value = cupsGetOption("orientation-requested", num_form, form)) != NULL)
+      {
+        data.orient_default = (ipp_orient_t)strtol(value, &end, 10);
 
-  //       if (errno == ERANGE || *end || data.orient_default < IPP_ORIENT_PORTRAIT || data.orient_default > IPP_ORIENT_NONE)
-  //         data.orient_default = IPP_ORIENT_PORTRAIT;
-  //     }
+        if (errno == ERANGE || *end || data.orient_default < IPP_ORIENT_PORTRAIT || data.orient_default > IPP_ORIENT_NONE)
+          data.orient_default = IPP_ORIENT_PORTRAIT;
+      }
 
-  //     if ((value = cupsGetOption("output-bin", num_form, form)) != NULL)
-  //     {
-  //       for (i = 0; i < data.num_bin; i ++)
-  //       {
-  //         if (!strcmp(data.bin[i], value))
-  //         {
-  //           data.bin_default = i;
-  //           break;
-  //         }
-	// }
-  //     }
+      if ((value = cupsGetOption("output-bin", num_form, form)) != NULL)
+      {
+        for (i = 0; i < data.num_bin; i ++)
+        {
+          if (!strcmp(data.bin[i], value))
+          {
+            data.bin_default = i;
+            break;
+          }
+	}
+      }
 
-  //     if ((value = cupsGetOption("print-color-mode", num_form, form)) != NULL)
-  //       data.color_default = _papplColorModeValue(value);
+      if ((value = cupsGetOption("print-color-mode", num_form, form)) != NULL)
+        data.color_default = _papplColorModeValue(value);
 
-  //     if ((value = cupsGetOption("print-content-optimize", num_form, form)) != NULL)
-  //       data.content_default = _papplContentValue(value);
+      if ((value = cupsGetOption("print-content-optimize", num_form, form)) != NULL)
+        data.content_default = _papplContentValue(value);
 
-  //     if ((value = cupsGetOption("print-darkness", num_form, form)) != NULL)
-  //     {
-  //       data.darkness_configured = (int)strtol(value, &end, 10);
+      if ((value = cupsGetOption("print-darkness", num_form, form)) != NULL)
+      {
+        data.darkness_configured = (int)strtol(value, &end, 10);
 
-  //       if (errno == ERANGE || *end || data.darkness_configured < 0 || data.darkness_configured > 100)
-  //         data.darkness_configured = 50;
-  //     }
+        if (errno == ERANGE || *end || data.darkness_configured < 0 || data.darkness_configured > 100)
+          data.darkness_configured = 50;
+      }
 
-  //     if ((value = cupsGetOption("print-quality", num_form, form)) != NULL)
-  //       data.quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
+      if ((value = cupsGetOption("print-quality", num_form, form)) != NULL)
+        data.quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
 
-  //     if ((value = cupsGetOption("print-scaling", num_form, form)) != NULL)
-  //       data.scaling_default = _papplScalingValue(value);
+      if ((value = cupsGetOption("print-scaling", num_form, form)) != NULL)
+        data.scaling_default = _papplScalingValue(value);
 
-  //     if ((value = cupsGetOption("print-speed", num_form, form)) != NULL)
-  //     {
-  //       data.speed_default = (int)strtol(value, &end, 10) * 2540;
+      if ((value = cupsGetOption("print-speed", num_form, form)) != NULL)
+      {
+        data.speed_default = (int)strtol(value, &end, 10) * 2540;
 
-  //       if (errno == ERANGE || *end || data.speed_default < 0 || data.speed_default > data.speed_supported[1])
-  //         data.speed_default = 0;
-  //     }
+        if (errno == ERANGE || *end || data.speed_default < 0 || data.speed_default > data.speed_supported[1])
+          data.speed_default = 0;
+      }
 
-  //     if ((value = cupsGetOption("sides", num_form, form)) != NULL)
-  //       data.sides_default = _papplSidesValue(value);
+      if ((value = cupsGetOption("sides", num_form, form)) != NULL)
+        data.sides_default = _papplSidesValue(value);
 
-  //     if ((value = cupsGetOption("printer-resolution", num_form, form)) != NULL)
-  //     {
-  //       if (sscanf(value, "%dx%ddpi", &data.x_default, &data.y_default) == 1)
-  //         data.y_default = data.x_default;
-  //     }
+      if ((value = cupsGetOption("printer-resolution", num_form, form)) != NULL)
+      {
+        if (sscanf(value, "%dx%ddpi", &data.x_default, &data.y_default) == 1)
+          data.y_default = data.x_default;
+      }
 
-  //     if ((value = cupsGetOption("media-source", num_form, form)) != NULL)
-  //     {
-  //       for (i = 0; i < data.num_source; i ++)
-	// {
-	//   if (!strcmp(value, data.source[i]))
-	//   {
-	//     data.media_default = data.media_ready[i];
-	//     break;
-	//   }
-	// }
-  //     }
+      if ((value = cupsGetOption("media-source", num_form, form)) != NULL)
+      {
+        for (i = 0; i < data.num_source; i ++)
+	{
+	  if (!strcmp(value, data.source[i]))
+	  {
+	    data.media_default = data.media_ready[i];
+	    break;
+	  }
+	}
+      }
 
-  //     // till here we save the default attributes ( not the vendor one ) ...
-
-
-  //     // save the vendor attributes over here ...
-
-  //     for (i = 0; i < data.num_vendor; i ++)
-  //     {
-  //       char	supattr[128];		// xxx-supported
-
-  //       snprintf(supattr, sizeof(supattr), "%s-supported", data.vendor[i]);
-
-  //       if ((value = cupsGetOption(data.vendor[i], num_form, form)) != NULL)
-	//   num_vendor = (int)cupsAddOption(data.vendor[i], value, (cups_len_t)num_vendor, &vendor);
-	// else if (ippFindAttribute(printer->driver_attrs, supattr, IPP_TAG_BOOLEAN))
-	//   num_vendor = (int)cupsAddOption(data.vendor[i], "false", (cups_len_t)num_vendor, &vendor);
-  //     }
+      // till here we save the default attributes ( not the vendor one ) ...
 
 
-  //     if (papplPrinterSetDriverDefaults(printer, &data, num_vendor, vendor))
-  //       status = _PAPPL_LOC("Changes saved.");
-  //     else
-  //       status = _PAPPL_LOC("Bad printer defaults.");
+      // save the vendor attributes over here ...
 
-  //     cupsFreeOptions((cups_len_t)num_vendor, vendor);
-  //   }
+      for (i = 0; i < data.num_vendor; i ++)
+      {
+        char	supattr[128];		// xxx-supported
 
-  //   cupsFreeOptions(num_form, form);
-  // }
+        snprintf(supattr, sizeof(supattr), "%s-supported", data.vendor[i]);
+
+        if ((value = cupsGetOption(data.vendor[i], num_form, form)) != NULL)
+	  num_vendor = (int)cupsAddOption(data.vendor[i], value, (cups_len_t)num_vendor, &vendor);
+	else if (ippFindAttribute(printer->driver_attrs, supattr, IPP_TAG_BOOLEAN))
+	  num_vendor = (int)cupsAddOption(data.vendor[i], "false", (cups_len_t)num_vendor, &vendor);
+      }
+
+      // adding the created preset in the printer object ...
+      pappl_pr_preset_data_t *preset = calloc(1 , sizeof(pappl_pr_preset_data_t));
+      preset->name = "Testing_one";
+      preset->preset_id = 9;
+      papplPrinterSetPresetFromDriver(printer, &data, preset, num_vendor , vendor );
+
+      // write your own logic to save preset in the printer...
+
+      // you have to check at which thread ... this thing should run .... otherwise changes wont get visible... accordingly ...
+      papplPrinterAddPresetCreate( printer , preset);
 
 
+
+
+      if (1)
+        status = _PAPPL_LOC("Changes saved.");
+      else
+        status = _PAPPL_LOC("Bad printer defaults.");
+
+      cupsFreeOptions((cups_len_t)num_vendor, vendor);
+    }
+
+    cupsFreeOptions(num_form, form);
+  }
 
 
  // if you don't wanna do some changes then this one ...
 
-
-
-
-
- 
-
-    papplClientHTMLPrinterHeader(client, printer, _PAPPL_LOC("Let's create a Preset for you ...\n"), 0, NULL, NULL);
+  papplClientHTMLPrinterHeader(client, printer, _PAPPL_LOC("Let's create a Preset for you ...\n"), 0, NULL, NULL);
 
 
   if (status)
@@ -1143,11 +1139,11 @@ void _papplPrinterPresetCreate(
       // See if any two sources have the same size...
       for (j = i + 1; j < data.num_source; j ++)
       {
-	if (data.media_ready[i].size_width > 0 && data.media_ready[i].size_width == data.media_ready[j].size_width && data.media_ready[i].size_length == data.media_ready[j].size_length)
-	{
-	  show_source = true;
-	  break;
-	}
+        if (data.media_ready[i].size_width > 0 && data.media_ready[i].size_width == data.media_ready[j].size_width && data.media_ready[i].size_length == data.media_ready[j].size_length)
+        {
+          show_source = true;
+          break;
+        }
       }
     }
 
@@ -1264,9 +1260,6 @@ void _papplPrinterPresetCreate(
     }
     papplClientHTMLPuts(client, "</select></td></tr>\n");
   }
-
-
-  // from here ...
 
   // print-content-optimize-default
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td><select name=\"print-content-optimize\">", papplClientGetLocString(client, "print-content-optimize"));
@@ -1399,10 +1392,6 @@ void _papplPrinterPresetCreate(
                         "        </form>\n", papplClientGetLocString(client, _PAPPL_LOC("Save")));
 
   papplClientHTMLPrinterFooter(client);
-
-
-
-
 
 
 }
