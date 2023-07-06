@@ -1304,18 +1304,36 @@ papplPrinterCreate(
     
     cups_len_t preset_iterator, preset_count;
     preset_count = cupsArrayGetCount(printer->presets);
-
+    
     for(preset_iterator = 0; preset_iterator < preset_count; preset_iterator++)
     {
+
+      //  printf("THE PATH VALUE THAT GETS GENERATED WITH EACH PRESET IS --- %s\n", path);
+
+    
        pappl_pr_preset_data_t * preset = cupsArrayGetElement(printer->presets, preset_iterator);
        // run each preset on specific route ...
-       snprintf(path, sizeof(path), "%s/presets/%s/edit", printer->uriname , preset->name);
 
        resource_data_t *resource_data = calloc(1, sizeof(resource_data_t));
        resource_data->printer = printer;
        resource_data->preset_name = preset->name;
-       
+
+       // add the edit resource ...
+       snprintf(path, sizeof(path), "%s/presets/%s/edit", printer->uriname , preset->name);
        papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
+       
+       // add the copy resource ...
+       snprintf(path, sizeof(path), "%s/presets/%s/copy", printer->uriname , preset->name);
+       papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetCopy, resource_data);
+
+      //  // add the delete resource ...
+      //  snprintf(path, sizeof(path), "%s/presets/%s/delete", printer->uriname , preset->name);
+      //  papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
+
+
+
+
+
 
     }
 // ----------------------------------------------//

@@ -383,28 +383,36 @@ bool papplPrinterAddPresetCreate( pappl_printer_t * printer , pappl_pr_preset_da
       // instance variables ...
         char			path[256];	// Path to resource
 
+        pappl_system_t *system =  papplPrinterGetSystem(printer);
+
+
         _papplRWLockWrite(printer);
 
         cupsArrayAdd(printer->presets, preset);
        
     
-      // //  pappl_pr_preset_data_t * preset = cupsArrayGetElement(printer->presets, preset_iterator);
       //  // run each preset on specific route ...
-      //  snprintf(path, sizeof(path), "%s/presets/%s/edit", printer->uriname , preset->name);
 
-      //  resource_data_t *resource_data = calloc(1, sizeof(resource_data_t));
-      //  resource_data->printer = printer;
-      //  resource_data->preset_name = preset->name;
+
+       resource_data_t *resource_data = calloc(1, sizeof(resource_data_t));
+       resource_data->printer = printer;
+       resource_data->preset_name = preset->name;
        
-      //  papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
 
-  
+       // set edit route ..
+       snprintf(path, sizeof(path), "%s/presets/%s/edit", printer->uriname , preset->name);
+       papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
+       
+       // set copy route ...
+       snprintf(path, sizeof(path), "%s/presets/%s/copy", printer->uriname , preset->name);
+       papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
 
         printer->config_time = time(NULL);
 
         _papplRWUnlock(printer);
 
         _papplSystemConfigChanged(printer->system);
+        return (true);
 }
 
 
@@ -434,7 +442,7 @@ papplPrinterSetPresetFromDriver(
   // if (!validate_defaults(printer, &printer->driver_data, data))
   //   return (false);
 
-  // _papplRWLockWrite(printer);
+  _papplRWLockWrite(printer);
 
   // Copy xxx_default values...
   preset->color_default          = data->color_default;
@@ -474,8 +482,16 @@ papplPrinterSetPresetFromDriver(
         case IPP_TAG_RANGE :
             intvalue = (int)strtol(value, &end, 10);
             if (errno != ERANGE && !*end)
-              ippAddInteger(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_INTEGER, defname, intvalue);
-            break;
+            {
+
+                 ippAddInteger(preset->driver_attrs, IPP_TAG_PRINTER, IPP_TAG_INTEGER, defname, intvalue);
+
+                 // cheking whether the attribute gets added in the preset structure...
+                 
+
+                break;
+            }
+           
 
         case IPP_TAG_BOOLEAN :
             ippAddBoolean(preset->driver_attrs, IPP_TAG_PRINTER, defname, !strcmp(value, "true") || !strcmp(value, "on"));
@@ -497,11 +513,11 @@ papplPrinterSetPresetFromDriver(
     }
   }
 
-  // printer->config_time = time(NULL);
+  printer->config_time = time(NULL);
 
-  // _papplRWUnlock(printer);
+  _papplRWUnlock(printer);
 
-  // _papplSystemConfigChanged(printer->system);
+  _papplSystemConfigChanged(printer->system);
 
   return (true);
 }

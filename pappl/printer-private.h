@@ -162,6 +162,7 @@ extern void		_papplPrinterWebSupplies(pappl_client_t *client, pappl_printer_t *p
 extern void		_papplPrinterPreset(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
 extern void		_papplPrinterPresetEdit(pappl_client_t *client, resource_data_t * resource_data) _PAPPL_PRIVATE;
 extern void		_papplPrinterPresetCreate(pappl_client_t *client, pappl_printer_t *printer) _PAPPL_PRIVATE;
+extern void		_papplPrinterPresetCopy(pappl_client_t *client, resource_data_t *resource_data) _PAPPL_PRIVATE;
 
 // ------------------------------------// 
 
