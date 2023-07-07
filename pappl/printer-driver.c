@@ -388,10 +388,11 @@ bool papplPrinterAddPresetCreate( pappl_printer_t * printer , pappl_pr_preset_da
 
         _papplRWLockWrite(printer);
 
+        // add the presets into the array ... ( printer->presets )
         cupsArrayAdd(printer->presets, preset);
        
     
-      //  // run each preset on specific route ...
+        // run each preset on specific route ...
 
 
        resource_data_t *resource_data = calloc(1, sizeof(resource_data_t));
@@ -405,7 +406,7 @@ bool papplPrinterAddPresetCreate( pappl_printer_t * printer , pappl_pr_preset_da
        
        // set copy route ...
        snprintf(path, sizeof(path), "%s/presets/%s/copy", printer->uriname , preset->name);
-       papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetEdit, resource_data);
+       papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetCopy, resource_data);
 
         printer->config_time = time(NULL);
 
