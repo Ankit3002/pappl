@@ -531,8 +531,8 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
                     snprintf(defname, sizeof(defname), "%s-default", line);
                     snprintf(supname, sizeof(supname), "%s-supported", line);
 
-                    printf("THE VALUE OF DEFNAME --- %s\n", defname);
-                    printf("The VALUE OF SUPNAME --- %s\n", supname);
+                    // printf("THE VALUE OF DEFNAME --- %s\n", defname);
+                    // printf("The VALUE OF SUPNAME --- %s\n", supname);
                    
                    
                     

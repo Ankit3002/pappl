@@ -455,6 +455,156 @@ papplSystemLoadState(
 }
 
 
+
+cups_file_t *
+papplFileOpenFdYo(
+              const char *mode,
+              int fd)
+{
+  cups_file_t *fp;
+  if ((fp = cupsFileOpenFd(fd, mode)) == NULL)
+  {
+    if (*mode == 's')
+      httpAddrClose(NULL, fd);
+    else
+      close(fd);
+  }
+  return (fp);
+}
+
+
+// api to save preset into the file ...
+// Input ->  filename , file descriptor , printer ...
+// Outuput -> 
+
+
+bool 
+papplSystemSavePreset(
+  pappl_printer_t * printer 
+)
+{
+
+  printf("PAPPL SAVE PRESET IS CALLED \n");
+
+    // here iterate over all the presets ... and store those in a separate file .... just write ....
+    // search what should be the logic to read from the file ...
+
+
+      //variables ..
+      int preset_file_descriptor_int;
+      cups_file_t *fp;
+      cups_len_t i , count, j;
+      char filename[1024];
+
+
+
+      // return an int file descriptor ...
+        /*
+       *  4th param --> location to where we want to store presets..
+       *  5th param --> name of the file 
+       *  6th param --> extension of the file...
+      */
+      preset_file_descriptor_int = papplPrinterOpenFile(printer,filename, sizeof(filename), "/home/ankit/Documents/pappl_preset_directory", "preset_configuration", "txt", "w");
+
+      // convert that into the cups_file_t
+      fp = papplFileOpenFdYo("w", preset_file_descriptor_int);
+
+      // run a for loop on each preset object in the printer object ..
+      
+      count = cupsArrayGetCount(printer->presets);
+      pappl_pr_preset_data_t * preset;
+      for(i=0 ; i< count; i++)
+      {
+
+        cups_len_t num_options = 0;
+        cups_option_t *options = NULL;
+
+        // grab the preset ...
+        preset = cupsArrayGetElement(printer->presets, i);
+
+        num_options = cupsAddIntegerOption("id", preset->preset_id, num_options, &options);
+        num_options = cupsAddOption("name", preset->name, num_options, &options);
+
+        write_options(fp, "<Preset", num_options , options);
+        cupsFreeOptions(num_options , options);
+
+        // write the static attributes to the file ...
+
+        if (preset->identify_default)
+        {
+          printf(" #######################3Just Checking whether preset have data or not \n");
+                cupsFilePutConf(fp, "identify-actions-default", _papplIdentifyActionsString(preset->identify_default));
+
+        }
+
+    if (preset->mode_configured)
+      cupsFilePutConf(fp, "label-mode-configured", _papplLabelModeString(preset->mode_configured));
+    if (preset->tear_offset_configured)
+      cupsFilePrintf(fp, "label-tear-offset-configured %d\n", preset->tear_offset_configured);
+
+    write_media_col(fp, "media-col-default", &preset->media_default);
+
+
+    // set the media source stuff ...
+    for (j = 0; j < (cups_len_t)preset->num_source; j ++)
+    {
+      if (preset->media_ready[j].size_name[0])
+      {
+        char	name[128];		// Attribute name
+
+        snprintf(name, sizeof(name), "media-col-ready%u", (unsigned)j);
+        write_media_col(fp, name, preset->media_ready + j);
+      }
+    }
+    if (preset->orient_default)
+      cupsFilePutConf(fp, "orientation-requested-default", ippEnumString("orientation-requested", (int)preset->orient_default));
+    if (preset->bin_default && preset->num_bin > 0)
+      cupsFilePutConf(fp, "output-bin-default", preset->bin[preset->bin_default]);
+    if (preset->color_default)
+      cupsFilePutConf(fp, "print-color-mode-default", _papplColorModeString(preset->color_default));
+    if (preset->content_default)
+      cupsFilePutConf(fp, "print-content-optimize-default", _papplContentString(preset->content_default));
+    if (preset->darkness_default)
+      cupsFilePrintf(fp, "print-darkness-default %d\n", preset->darkness_default);
+    if (preset->quality_default)
+      cupsFilePutConf(fp, "print-quality-default", ippEnumString("print-quality", (int)preset->quality_default));
+    if (preset->scaling_default)
+      cupsFilePutConf(fp, "print-scaling-default", _papplScalingString(preset->scaling_default));
+    if (preset->darkness_configured)
+      cupsFilePrintf(fp, "printer-darkness-configured %d\n", preset->darkness_configured);
+    if (preset->sides_default)
+      cupsFilePutConf(fp, "sides-default", _papplSidesString(preset->sides_default));
+    if (preset->x_default)
+      cupsFilePrintf(fp, "printer-resolution-default %dx%ddpi\n", preset->x_default, preset->y_default);
+   
+   
+    // static attributes are done ...
+
+    // now the vendor options...
+    for (j = 0; j < (cups_len_t)printer->driver_data.num_vendor; j ++)
+    {
+      char	defname[128],		// xxx-default name
+	      	defvalue[1024];		// xxx-default value
+
+      snprintf(defname, sizeof(defname), "%s-default", printer->driver_data.vendor[j]);
+      ippAttributeString(ippFindAttribute(preset->driver_attrs, defname, IPP_TAG_ZERO), defvalue, sizeof(defvalue));
+
+      cupsFilePutConf(fp, defname, defvalue);
+    }
+
+
+
+ cupsFilePuts(fp, "</Preset>\n");
+
+      }
+
+  cupsFileClose(fp);
+
+  return true;
+      
+}
+
+
 //
 // 'papplSystemSaveState()' - Save the current system state.
 //
@@ -473,6 +623,14 @@ papplSystemSaveState(
     pappl_system_t *system,		// I - System
     const char     *filename)		// I - File to save
 {
+
+  printf("PapplSystemSaveState is called \n");
+  printf(" the content of filename is ---- &&&&& %s\n", filename);
+
+
+
+
+  // instance variables ...
   cups_len_t		i, j,		// Looping vars
 			count;		// Number of printers
   cups_file_t		*fp;		// Output file
@@ -489,6 +647,9 @@ papplSystemSaveState(
   papplLog(system, PAPPL_LOGLEVEL_INFO, "Saving system state to '%s'.", filename);
 
   _papplRWLockRead(system);
+
+
+  // set the system object ..
 
   if (system->dns_sd_name)
     cupsFilePutConf(fp, "DNSSDName", system->dns_sd_name);
@@ -512,6 +673,8 @@ papplSystemSaveState(
   cupsFilePrintf(fp, "NextPrinterID %d\n", system->next_printer_id);
   cupsFilePutConf(fp, "UUID", system->uuid);
 
+
+
   // Loop through the printers.
   //
   // Note: Cannot use cupsArrayGetFirst/Last since other threads might be
@@ -522,6 +685,8 @@ papplSystemSaveState(
     cups_len_t		num_options = 0;// Number of options
     cups_option_t	*options = NULL;// Options
 
+
+    // grab the particular printer .... by iteration ...
     printer = (pappl_printer_t *)cupsArrayGetElement(system->printers, i);
 
     if (printer->is_deleted)
@@ -529,15 +694,21 @@ papplSystemSaveState(
 
     _papplRWLockRead(printer);
 
+
+    // so printer have id and other description in printer figuring out tag ...
     num_options = cupsAddIntegerOption("id", printer->printer_id, num_options, &options);
     num_options = cupsAddOption("name", printer->name, num_options, &options);
     num_options = cupsAddOption("did", printer->device_id ? printer->device_id : "", num_options, &options);
     num_options = cupsAddOption("uri", printer->device_uri, num_options, &options);
     num_options = cupsAddOption("driver", printer->driver_name, num_options, &options);
 
+
+ 
+    // write options --- write all the definition into the file ...
     write_options(fp, "<Printer", num_options, options);
     cupsFreeOptions(num_options, options);
 
+    // After the description write the some configuration data into the file ...
     if (printer->dns_sd_name)
       cupsFilePutConf(fp, "DNSSDName", printer->dns_sd_name);
     if (printer->location)
@@ -558,6 +729,11 @@ papplSystemSaveState(
     cupsFilePrintf(fp, "NextJobId %d\n", printer->next_job_id);
     cupsFilePrintf(fp, "ImpressionsCompleted %d\n", printer->impcompleted);
 
+
+    /*
+     * set the static attributes in the file ...
+     */  
+
     if (printer->driver_data.identify_default)
       cupsFilePutConf(fp, "identify-actions-default", _papplIdentifyActionsString(printer->driver_data.identify_default));
 
@@ -568,6 +744,8 @@ papplSystemSaveState(
 
     write_media_col(fp, "media-col-default", &printer->driver_data.media_default);
 
+
+    // set the media source stuff ...
     for (j = 0; j < (cups_len_t)printer->driver_data.num_source; j ++)
     {
       if (printer->driver_data.media_ready[j].size_name[0])
@@ -598,6 +776,9 @@ papplSystemSaveState(
       cupsFilePutConf(fp, "sides-default", _papplSidesString(printer->driver_data.sides_default));
     if (printer->driver_data.x_default)
       cupsFilePrintf(fp, "printer-resolution-default %dx%ddpi\n", printer->driver_data.x_default, printer->driver_data.y_default);
+   
+   
+    // set the vendor attributes associated with the printer...
     for (j = 0; j < (cups_len_t)printer->driver_data.num_vendor; j ++)
     {
       char	defname[128],		// xxx-default name
@@ -608,6 +789,12 @@ papplSystemSaveState(
 
       cupsFilePutConf(fp, defname, defvalue);
     }
+
+
+
+    /*
+     *    below one is about jobs ... don't care about preset only contains ---> static attributes ... and vendor attributes...
+     */
 
     // Note: Cannot use cupsArrayGetFirst/Last since other threads might be
     // enumerating the all_jobs array.
@@ -676,6 +863,18 @@ papplSystemSaveState(
 
       _papplRWUnlock(job);
     }
+
+
+    /*
+     *  write the presets to the specific preset file that they have ..
+    */
+
+
+      bool result = papplSystemSavePreset(printer);
+
+      
+
+    // after that just close the printer tag ...
 
     cupsFilePuts(fp, "</Printer>\n");
 
