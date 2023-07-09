@@ -525,8 +525,8 @@ papplJobOpenFile(
   // Create a filename with the job-id, job-name, and document-format (extension)...
   snprintf(fname, fnamesize, "%s/p%05dj%09d-%s.%s", directory, job->printer->printer_id, job->job_id, name, ext);
 
-  printf(" the below one is what i am looking for **** \n");
-    printf(fname, fnamesize, "%s/p%05dj%09d-%s.%s", directory, job->printer->printer_id, job->job_id, name, ext);
+  // printf(" the below one is what i am looking for **** \n");
+  //   printf(fname, fnamesize, "%s/p%05dj%09d-%s.%s", directory, job->printer->printer_id, job->job_id, name, ext);
 
 
   if (!strcmp(mode, "r"))

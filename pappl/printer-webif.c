@@ -301,7 +301,11 @@ void _papplPrinterPresetCopy(
 
 
   int			i, j;		// Looping vars
+
+
   pappl_pr_driver_data_t data;		// Driver data
+
+
   const char		*keyword;	// Current keyword
   char			text[256];	// Localized text for keyword
   const char		*status = NULL;	// Status message, if any
@@ -386,46 +390,7 @@ void _papplPrinterPresetCopy(
     else
     {
 
-        //  _papplRWLockWrite(printer);
-      
-      // use papplFileOpen ---  function to open files and all ....
-
-      char something[1024];
-
-      char buf_me[8096];
-
-      for (size_t i = 0; i < num_form; i++) {
-        strcat(buf_me, form[i].name);
-        strcat(buf_me, "----");
-        strcat(buf_me, form[i].value);
-        strcat(buf_me, "\n");
-        printf("Option Name in the web default page  : %s\n", form[i].name);
-        printf("Option Value in the web defualt page : %s\n", form[i].value);
-        printf("\n");
-      }
-
-
-
-    // ### phase 1 
-    //   you have the values from the form data now ... now write the logic to store those as well 
-    //   then write the logic to in create api ...
-    //   then write the logic for copy 
-    //   then write the logic for delete ...
-    //   then write the logic loadsave.c for saving the printer state...( preset one ..) and you are done ...
-
-
-    // ### phase 2
-    //   send and apply in client listeners ..
-
-
-      // printf("the DATA ---- %s\n", buf_me);
-
-      // int ankit_file_descriptor;
-      // ankit_file_descriptor = papplPrinterOpenFile(printer,something, sizeof(something), NULL, "preset_opt", "configuration_me","w");
-
-      // size_t leng = strlen(buf_me);
-      // ssize_t bytes_written = write(ankit_file_descriptor, buf_me, leng);
-      // close(ankit_file_descriptor);
+      // create local variables ...
 
       pappl_pr_preset_data_t *preset = calloc(1 , sizeof(pappl_pr_preset_data_t));
 
@@ -433,6 +398,9 @@ void _papplPrinterPresetCopy(
 
       const char	*value;		// Value of form variable
       char		*end;			// End of value
+
+
+      preset->preset_id = preset_count + 1;
 
 
       // set the the data into preset .... ( The standard one ...)
@@ -513,7 +481,8 @@ void _papplPrinterPresetCopy(
 	}
       }
 
-      // save the vendor attributes over here ... ( vendor options ...)
+      // save the vendor options in the cups dictionary ... as key value pairs...as
+      // num_vendor --- vendor..
 
       for (i = 0; i < data.num_vendor; i ++)
       {
@@ -540,7 +509,8 @@ void _papplPrinterPresetCopy(
       }
 
 
-      // set the vendor attributes over here... 
+      // now you have preset which contains the preset with standard attributes ...
+      // then below set the vendor attributes over here ...
       papplPrinterSetPresetsDefaults(printer, preset, num_vendor, vendor);
 
       // add the preset object into the system ....
@@ -1574,6 +1544,22 @@ void _papplPrinterPresetCreate(
   pappl_printer_t *printer)
 {
 
+
+  printf("                    ***********                \n");
+  printf("                    ***********                \n");
+
+
+
+  printf(" PRESET CREATE IS CALLED    TO CREATE THE PRESET     \n");
+  
+  printf("                    ***********                \n");
+
+  printf("                    ***********                \n");
+
+  printf("                    ***********                \n");
+  printf("                    ***********                \n");
+
+
   // here we fetch data from the driver ....
 
   int			i, j;		// Looping vars
@@ -1618,6 +1604,9 @@ void _papplPrinterPresetCreate(
   // the below is really easy ... just save the form varialbes into the printer instances .... simple and easy ...
   if (client->operation == HTTP_STATE_POST)
   {
+
+  printf("                    ***********  POST METHOD IS CALLED                 \n");
+
     cups_len_t		num_form = 0;	// Number of form variable
     cups_option_t	*form = NULL;	// Form variables
     int			num_vendor = 0;	// Number of vendor options
@@ -1639,9 +1628,14 @@ void _papplPrinterPresetCreate(
 
       const char	*value;		// Value of form variable
       char		*end;			// End of value
+      cups_len_t count ;
       pappl_pr_preset_data_t *preset = calloc(1 , sizeof(pappl_pr_preset_data_t));
-      preset->preset_id = 9;
+      // preset->preset_id = 9;
       preset->driver_attrs = ippNew();
+
+      count = cupsArrayGetCount(printer->presets);
+      preset->preset_id = count + 1;
+
 
       if((value = cupsGetOption("preset_name", num_form , form)) != NULL)
       {

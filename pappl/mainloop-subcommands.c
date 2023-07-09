@@ -1447,6 +1447,7 @@ void function(){
 
 
 
+
 //
 // '_papplMainloopSubmitJob()' - Submit job(s).
 //
@@ -1608,6 +1609,56 @@ _papplMainloopSubmitJob(
 
     _papplMainloopAddOptions(request, num_options, options, supported);
     ippDelete(supported);
+
+
+
+
+
+
+    // printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the value of resource is --- %s \n", resource);
+
+
+
+    // // printing the values ...
+
+    // ipp_attribute_t *gayatri;
+
+
+    // for (gayatri = ippFirstAttribute(request); gayatri; gayatri = ippNextAttribute(request)) {
+    //     const char *name = ippGetName(gayatri);
+    //     int count = ippGetCount(gayatri);
+    //     ipp_tag_t value_tag = ippGetValueTag(gayatri);
+
+    //     printf("the number of attributes----%d\n", count);
+    //     printf("Attribute: %s\n", name);
+
+    //     for (int i = 0; i < count; i++) {
+    //         if (value_tag == IPP_TAG_TEXT) {
+
+
+              
+                
+
+
+
+
+
+    //             const char *value = ippGetString(gayatri, i, NULL);
+    //             printf("  Value %d: %s\n", i, value);
+    //         } else if (value_tag == IPP_TAG_INTEGER) {
+    //             int value = ippGetInteger(gayatri, i);
+    //             printf("  Value %d: %d\n", i, value);
+    //         }
+    //         // Add support for other value types as needed
+
+    //         // Note: You can use ippGetValueTagAsString(value_tag) to get a string representation of the value tag if desired
+    //     }
+    // }
+
+
+    // printf("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n");
+
+
 
     response = cupsDoFileRequest(http, request, resource, filename);
 

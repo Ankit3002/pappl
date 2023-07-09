@@ -389,6 +389,9 @@ bool papplPrinterAddPresetCreate( pappl_printer_t * printer , pappl_pr_preset_da
         _papplRWLockWrite(printer);
 
         // add the presets into the array ... ( printer->presets )
+
+            if (!printer->presets)
+        printer->presets = cupsArrayNew3(NULL, NULL, NULL, 0, NULL, NULL);
         cupsArrayAdd(printer->presets, preset);
        
     

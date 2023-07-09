@@ -504,7 +504,7 @@ papplSystemSavePreset(
        *  5th param --> name of the file 
        *  6th param --> extension of the file...
       */
-      preset_file_descriptor_int = papplPrinterOpenFile(printer,filename, sizeof(filename), "/home/ankit/Documents/pappl_preset_directory", "preset_configuration", "txt", "w");
+      preset_file_descriptor_int = papplPrinterOpenFile(printer,filename, sizeof(filename), "/home/ankit/Documents/pappl_preset_directory", "preset_option", "txt", "w");
 
       // convert that into the cups_file_t
       fp = papplFileOpenFdYo("w", preset_file_descriptor_int);
@@ -591,9 +591,6 @@ papplSystemSavePreset(
 
       cupsFilePutConf(fp, defname, defvalue);
     }
-
-
-
  cupsFilePuts(fp, "</Preset>\n");
 
       }
