@@ -377,7 +377,7 @@ papplPresetAdd(pappl_system_t *system , pappl_printer_t * printer )
   char filename[1024];
    
   
-  fp =  papplPrinterOpenFile(printer,filename, sizeof(filename), "/home/ankit/Documents/pappl_preset_directory", "preset_option", "txt", "r");
+  fp =  papplPrinterOpenFile(printer,filename, sizeof(filename), system->directory, "preset_option", "txt", "r");
   
   linenum = 0;
 
