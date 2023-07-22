@@ -1092,6 +1092,8 @@ papplPrinterCreate(
   // orientation-requested-supported
   ippAddIntegers(printer->attrs, IPP_TAG_PRINTER, IPP_TAG_ENUM, "orientation-requested-supported", (int)(sizeof(orientation_requested) / sizeof(orientation_requested[0])), orientation_requested);
 
+
+
   // pdl-override-supported
   ippAddString(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "pdl-override-supported", NULL, "attempted");
 
@@ -1165,8 +1167,45 @@ papplPrinterCreate(
   // Add the printer to the system...
   _papplSystemAddPrinter(system, printer, printer_id);
 
- // add the presets from their statefile...
+
+     // add the presets from their statefile...
   papplPresetAdd(system, printer);
+
+        // fetch the size of presets over here ...
+  cups_array_t *presets = printer->presets;
+  const char * preset_sending[cupsArrayCount(presets)];
+
+  for (cups_len_t x = 0; x < cupsArrayCount(presets); x++)
+  {
+    pappl_pr_preset_data_t *preset_here = cupsArrayGetElement(presets, x);
+    const char *name_preset = strdup(preset_here->name);
+    preset_sending[x] = strdup(name_preset);
+
+        printf("the name of the FINALLY_PRESET  is --> %s\n", preset_sending[x]);
+  }
+
+
+  int number = (int)(sizeof(preset_sending) / sizeof(preset_sending[0]));
+  printf("the length_of_job_array is --> %d\n", number);
+
+
+
+
+      _papplRWLockWrite(system);
+
+  // add job-presets-supported over here ...
+  ippAddStrings(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-presets-supported", (int)(sizeof(preset_sending) / sizeof(preset_sending[0])), NULL, preset_sending);
+
+
+
+
+    _papplRWUnlock(system);
+    _papplSystemConfigChanged(system);
+
+
+
+
+
 
       
 

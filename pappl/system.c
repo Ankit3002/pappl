@@ -665,6 +665,11 @@ printf("Now we are looping after all \n");
 	    system->num_clients ++;
 	    _papplRWUnlock(system);
 
+
+      /*
+       *  here we are running client instances ...
+       */
+
 	    if (pthread_create(&client->thread_id, &tattr, (void *(*)(void *))_papplClientRun, client))
 	    {
 	      // Unable to create client thread...

@@ -210,9 +210,17 @@ _papplClientProcessHTTP(
   client->response  = NULL;
   client->operation = HTTP_STATE_WAITING;
 
+
+
+
+
   // Read a request from the connection...
   while ((http_state = httpReadRequest(client->http, uri, sizeof(uri))) == HTTP_STATE_WAITING)
     usleep(1);
+
+
+
+
 
   // Parse the request line...
   if (http_state == HTTP_STATE_ERROR)
@@ -235,6 +243,10 @@ _papplClientProcessHTTP(
     return (false);
   }
 
+
+
+
+
   // Separate the URI into its components...
   if (httpSeparateURI(HTTP_URI_CODING_MOST, uri, scheme, sizeof(scheme), userpass, sizeof(userpass), hostname, sizeof(hostname), &port, client->uri, sizeof(client->uri)) < HTTP_URI_STATUS_OK && (http_state != HTTP_STATE_OPTIONS || strcmp(uri, "*")))
   {
@@ -243,12 +255,19 @@ _papplClientProcessHTTP(
     return (false);
   }
 
+
+
+
   if ((client->options = strchr(client->uri, '?')) != NULL)
     *(client->options)++ = '\0';
+
+
 
   // Process the request...
   client->start     = time(NULL);
   client->operation = httpGetState(client->http);
+
+
 
   // Parse incoming parameters until the status changes...
   while ((http_status = httpUpdate(client->http)) == HTTP_STATUS_CONTINUE)
@@ -267,6 +286,9 @@ _papplClientProcessHTTP(
 
   papplLogClient(client, PAPPL_LOGLEVEL_INFO, "%s %s://%s%s HTTP/%d.%d (%s)", httpStateString(http_state), httpIsEncrypted(client->http) ? "https" : "http", httpGetField(client->http, HTTP_FIELD_HOST), uri, http_version / 100, http_version % 100, client->language);
 
+
+
+
   // Validate the host header...
   if (!httpGetField(client->http, HTTP_FIELD_HOST)[0] &&
       httpGetVersion(client->http) >= HTTP_VERSION_1_1)
@@ -275,6 +297,8 @@ _papplClientProcessHTTP(
     papplClientRespond(client, HTTP_STATUS_BAD_REQUEST, NULL, NULL, 0, 0);
     return (false);
   }
+
+
 
   papplCopyString(client->host_field, httpGetField(client->http, HTTP_FIELD_HOST), sizeof(client->host_field));
   if ((ptr = strrchr(client->host_field, ':')) != NULL)
@@ -302,6 +326,10 @@ _papplClientProcessHTTP(
     papplClientRespond(client, HTTP_STATUS_BAD_REQUEST, NULL, NULL, 0, 0);
     return (false);
   }
+
+
+
+
 
   // Handle HTTP Upgrade...
   if (!strcasecmp(httpGetField(client->http, HTTP_FIELD_CONNECTION), "Upgrade"))
@@ -341,6 +369,10 @@ _papplClientProcessHTTP(
 	return (false);
     }
   }
+
+
+
+
 
   // Handle new transfers...
   switch (client->operation)
@@ -415,6 +447,11 @@ _papplClientProcessHTTP(
         // If we get here then the resource wasn't found...
 	return (papplClientRespond(client, HTTP_STATUS_NOT_FOUND, NULL, NULL, 0, 0));
 
+
+
+
+
+
     case HTTP_STATE_POST :
         if (!strcmp(httpGetField(client->http, HTTP_FIELD_CONTENT_TYPE), "application/ipp"))
         {
@@ -430,6 +467,9 @@ _papplClientProcessHTTP(
 	      return (false);
 	    }
 	  }
+    
+
+    // below is the flow that we are doing ... 
 
 	  // Now that we have the IPP request, process the request...
 	  return (_papplClientProcessIPP(client));
@@ -666,7 +706,12 @@ _papplClientRun(
     }
 
     if (!_papplClientProcessHTTP(client))
+    {
+      printf("The while loop break over here \n");
       break;
+    }
+    printf("No it's not break yet \n");
+
 
     _papplClientCleanTempFiles(client);
   }

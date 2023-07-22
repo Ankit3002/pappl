@@ -95,6 +95,14 @@ _papplClientProcessIPP(
   {
     papplClientRespondIPP(client, IPP_STATUS_ERROR_BAD_REQUEST, "No attributes in request.");
   }
+
+
+
+
+
+
+
+
   else
   {
     // Make sure that the attributes are provided in the correct order and
@@ -246,9 +254,16 @@ _papplClientProcessIPP(
   }
 
   if (httpGetState(client->http) != HTTP_STATE_WAITING)
-    return (papplClientRespond(client, HTTP_STATUS_OK, NULL, "application/ipp", 0, ippLength(client->response)));
+  {
+      printf("Waiting state is called \n");
+        return (papplClientRespond(client, HTTP_STATUS_OK, NULL, "application/ipp", 0, ippLength(client->response)));
+  }
   else
+  {
+    printf("Else get executed and we returned true\n");
     return (true);
+  }
+
 }
 
 

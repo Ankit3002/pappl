@@ -74,12 +74,39 @@ _papplPrinterCopyAttributesNoLock(
 					// URL scheme for resources
 
 
+
+  // we have driver data object -- > which contains all the driver attributes...
+
+  // printf("the value of atts in printer object is --> %s\n", ippGetName(printer->attrs));
+
   _papplCopyAttributes(client->response, printer->attrs, ra, IPP_TAG_ZERO, IPP_TAG_CUPS_CONST);
+
+
+
+
+
+
+  // below is responsible for putting ... advanced button ... and color section ...
   _papplCopyAttributes(client->response, printer->driver_attrs, ra, IPP_TAG_ZERO, IPP_TAG_CUPS_CONST);
+
+
+
+  // print the values inside printer->driver_attrs ...
+
+
+
+
+
+  // below will copy the state not the attributes actually ...
   _papplPrinterCopyStateNoLock(printer, IPP_TAG_PRINTER, client->response, client, ra);
+
+
+
 
   if (!ra || cupsArrayFind(ra, "copies-supported"))
   {
+
+    printf("copies-supported is working fine \n");
     // Filter copies-supported value based on the document format...
     // (no copy support for streaming raster formats)
     if (format && (!strcmp(format, "image/pwg-raster") || !strcmp(format, "image/urf")))
@@ -90,6 +117,8 @@ _papplPrinterCopyAttributesNoLock(
 
   if (!ra || cupsArrayFind(ra, "identify-actions-default"))
   {
+    printf("identify-actions-default is working fine \n");
+
     for (num_values = 0, bit = PAPPL_IDENTIFY_ACTIONS_DISPLAY; bit <= PAPPL_IDENTIFY_ACTIONS_SPEAK; bit *= 2)
     {
       if (data->identify_default & bit)
@@ -117,7 +146,12 @@ _papplPrinterCopyAttributesNoLock(
     };
 
     if (!ra || cupsArrayFind(ra, "job-retain-until-default"))
+    {
+    printf("job-retain-until-default is working fine \n");
+
       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-retain-until-default", NULL, "none");
+    }
+      
 
     if (!ra || cupsArrayFind(ra, "job-retain-until-interval-default"))
       ippAddOutOfBand(client->response, IPP_TAG_PRINTER, IPP_TAG_NOVALUE, "job-retain-until-interval-default");
@@ -197,6 +231,7 @@ _papplPrinterCopyAttributesNoLock(
 
   if ((!ra || cupsArrayFind(ra, "media-col-default")) && data->media_default.size_name[0])
   {
+        printf("media-col-default is working fine \n");
     ipp_t *col = _papplMediaColExport(&printer->driver_data, &data->media_default, 0);
 					// Collection value
 
@@ -206,6 +241,7 @@ _papplPrinterCopyAttributesNoLock(
 
   if (!ra || cupsArrayFind(ra, "media-col-ready"))
   {
+        printf("media-col-ready is working fine \n");
     cups_len_t		j,		// Looping var
 			count;		// Number of values
     ipp_t		*col;		// Collection value
@@ -288,11 +324,28 @@ _papplPrinterCopyAttributesNoLock(
   if (!ra || cupsArrayFind(ra, "multiple-document-handling-default"))
     ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "multiple-document-handling-default", NULL, "separate-documents-collated-copies");
 
+
+
+  // let's tweak this one ...
+
+
+  // if(!ra || cupsArrayFind(ra , "job-presets-supported"))
+  // {
+  //   ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "job-presets-supported", 3);
+  // }
+
+
   if (!ra || cupsArrayFind(ra, "orientation-requested-default"))
+  {
+        printf("orientation-requested-default is working fine \n");
+    // printf("The value of orient-default integer is --> %d\n", (int)data->orient_default);
     ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "orientation-requested-default", (int)data->orient_default);
+  }
+
 
   if (!ra || cupsArrayFind(ra, "output-bin-default"))
   {
+        printf("output-bin-default is working fine \n");
     if (data->num_bin > 0)
       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "output-bin-default", NULL, data->bin[data->bin_default]);
     else if (data->output_face_up)
@@ -302,10 +355,15 @@ _papplPrinterCopyAttributesNoLock(
   }
 
   if ((!ra || cupsArrayFind(ra, "print-color-mode-default")) && data->color_default)
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-color-mode-default", NULL, _papplColorModeString(data->color_default));
+  {
+    printf("print-color-mode-default is working fine \n");
+        ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-color-mode-default", NULL, _papplColorModeString(data->color_default));
+
+  }
 
   if (!ra || cupsArrayFind(ra, "print-content-optimize-default"))
   {
+        printf("print-content-optimize-default is working fine \n");
     if (data->content_default)
       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-content-optimize-default", NULL, _papplContentString(data->content_default));
     else
@@ -314,6 +372,8 @@ _papplPrinterCopyAttributesNoLock(
 
   if (!ra || cupsArrayFind(ra, "print-quality-default"))
   {
+        printf("print-quality-optimize-default is working fine \n");
+
     if (data->quality_default)
       ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "print-quality-default", (int)data->quality_default);
     else
@@ -322,14 +382,21 @@ _papplPrinterCopyAttributesNoLock(
 
   if (!ra || cupsArrayFind(ra, "print-scaling-default"))
   {
+        printf("print-scaling-default is working fine \n");
+
     if (data->scaling_default)
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-scaling-default", NULL, _papplScalingString(data->scaling_default));
+      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-scaling-default", "Ankit", _papplScalingString(data->scaling_default));
     else
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-scaling-default", NULL, "auto");
+      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-scaling-default", "Ankit", "auto");
   }
 
   if (!ra || cupsArrayFind(ra, "printer-config-change-date-time"))
-    ippAddDate(client->response, IPP_TAG_PRINTER, "printer-config-change-date-time", ippTimeToDate(printer->config_time));
+  {
+        printf("printer-config-change-date-time is working fine \n");
+
+        ippAddDate(client->response, IPP_TAG_PRINTER, "printer-config-change-date-time", ippTimeToDate(printer->config_time));
+
+  }
 
   if (!ra || cupsArrayFind(ra, "printer-config-change-time"))
   {
@@ -350,10 +417,20 @@ _papplPrinterCopyAttributesNoLock(
     ippAddDate(client->response, IPP_TAG_PRINTER, "printer-current-time", ippTimeToDate(time(NULL)));
 
   if ((!ra || cupsArrayFind(ra, "printer-darkness-configured")) && data->darkness_supported > 0)
-    ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-darkness-configured", data->darkness_configured);
+  {
+        printf("printer-darkness-configured is working fine \n");
+
+        ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-darkness-configured", data->darkness_configured);
+
+  }
 
   if (!ra || cupsArrayFind(ra, "printer-dns-sd-name"))
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_NAME, "printer-dns-sd-name", NULL, printer->dns_sd_name ? printer->dns_sd_name : "");
+  {
+        printf("printer-dns-sd-name is working fine \n");
+
+        ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_NAME, "printer-dns-sd-name", NULL, printer->dns_sd_name ? printer->dns_sd_name : "");
+
+  }
 
 //  _papplRWLockRead(client->system);
   _papplSystemExportVersions(client->system, client->response, IPP_TAG_PRINTER, ra);
@@ -822,46 +899,56 @@ _papplPrinterProcessIPP(
   switch (ippGetOperation(client->request))
   {
     case IPP_OP_PRINT_JOB :
+    printf("IPP_OP_PRINT_JOB GET EXECUTED \n");
 	ipp_print_job(client);
 	break;
 
     case IPP_OP_VALIDATE_JOB :
+    printf("IPP_OP_VALIDATE_JOB GET EXECUTED \n");
 	ipp_validate_job(client);
 	break;
 
     case IPP_OP_CREATE_JOB :
+    printf("IPP_OP_CREATE_JOB GET EXECUTED \n");
 	ipp_create_job(client);
 	break;
 
     case IPP_OP_CANCEL_CURRENT_JOB :
+    printf("IPP_OP_CANCEL_CURRENT_JOB GET EXECUTED \n");
 	ipp_cancel_current_job(client);
 	break;
 
     case IPP_OP_CANCEL_JOBS :
     case IPP_OP_CANCEL_MY_JOBS :
+    printf("IPP_OP_CANCEL_JOBS OR MY_JOBS GET EXECUTED \n");
 	ipp_cancel_jobs(client);
 	break;
 
     case IPP_OP_GET_JOBS :
+    printf("IPP_OP_GET_JOBS GET EXECUTED \n");
 	ipp_get_jobs(client);
 	break;
 
     case IPP_OP_GET_PRINTER_ATTRIBUTES :
     case IPP_OP_GET_PRINTER_SUPPORTED_VALUES :
     case IPP_OP_CUPS_GET_DEFAULT :
+    printf("IPP_OP_GET_DEFAULT AND PRINTER_SUPPORTED AND PRINTER_ATTRIBUTES EXECUTED \n");
 	ipp_get_printer_attributes(client);
 	break;
 
     case IPP_OP_SET_PRINTER_ATTRIBUTES :
+    printf("IPP_OP_SET_PRINTER_ATTRIBUTES GET EXECUTED \n");
 	ipp_set_printer_attributes(client);
 	break;
 
     case IPP_OP_IDENTIFY_PRINTER :
+    printf("IPP_OP_IDENTIFY_PRINTER GET EXECUTED \n");
 	ipp_identify_printer(client);
 	break;
 
     case IPP_OP_PAUSE_PRINTER :
     case IPP_OP_PAUSE_PRINTER_AFTER_CURRENT_JOB :
+    printf("IPP_OP_PAUSE_PRINTER GET EXECUTED \n");
 	ipp_pause_printer(client);
 	break;
 
@@ -1589,9 +1676,18 @@ static void
 ipp_get_printer_attributes(
     pappl_client_t *client)		// I - Client
 {
+
+  printf("Get printer attributes is called \n");
   cups_array_t		*ra;		// Requested attributes array
   pappl_printer_t	*printer = client->printer;
 					// Printer
+
+
+
+
+
+
+
 
 
   if (!printer->device_in_use && !printer->processing_job && (time(NULL) - printer->status_time) > 1 && printer->driver_data.status_cb)
@@ -1604,11 +1700,143 @@ ipp_get_printer_attributes(
   // Send the attributes...
   ra = ippCreateRequestedArray(client->request);
 
+  // over here you have requested array which contains string stuff...
+  // printing all the things inside reequested array ....
+  // int ank_count = cupsArrayGetCount(ra);
+  // for(int x=0; x< ank_count; x++)
+  // {
+  //   char *some = cupsArrayGetElement(ra , x);
+  //   printf("THE ATTRIBUTES THAT WE ADDED ARE --> %s\n", some);
+  // }
+
   papplClientRespondIPP(client, IPP_STATUS_OK, NULL);
 
   _papplRWLockRead(printer->system);
   _papplRWLockRead(printer);
+
+        /*
+   * Manipulating the values inside printer->attrs...
+   * 
+  */
+
+      // _papplRWLockWrite(printer);
+
+    // write the logic to print all the attributes...
+     ipp_attribute_t *attr;
+
+    for (attr = ippFirstAttribute(printer->attrs); attr; attr = ippNextAttribute(printer->attrs)) {
+        const char *name = ippGetName(attr);
+        int count = ippGetCount(attr);
+        ipp_tag_t value_tag = ippGetValueTag(attr);
+
+        printf("The value inside the driver_attrs are ---> %s\n", name);
+        printf("the value of count associated with that is ---> %d\n" , count);
+      
+           for (int i = 0; i < count; i++) 
+        {
+            if (value_tag == IPP_TAG_TEXT) {
+                const char *value = ippGetString(attr, i, NULL);
+                printf("  Value %d: %s\n", i, value);
+            } else if (value_tag == IPP_TAG_INTEGER) {
+                int value = ippGetInteger(attr, i);
+                printf("  Value %d: %d\n", i, value);
+            }
+            else if(value_tag == IPP_TAG_BOOLEAN)
+            {
+              bool value = ippGetBoolean(attr , i);
+              printf("  Value %d: %d\n", i , value);
+            }
+
+            else if(value_tag == IPP_TAG_STRING)
+            {
+
+              char *value = ippGetString(attr, i , NULL);
+                      printf("  Value %d: %s\n", i, value);
+            }
+
+            else if(value_tag == IPP_TAG_ENUM)
+            {
+              // here we print the enum values ...
+              int value = ippGetInteger(attr , i);
+              printf("  Value %d: %d\n", i , value);
+
+              
+              // switch(value)
+              // {
+              //   case IPP_QUALITY_HIGH:
+              //     ippSetInteger(printer->attrs , &attr , i , 4);
+              //     break;
+                
+              //   case IPP_QUALITY_NORMAL:
+              //     ippSetInteger(printer->attrs , &attr , i , 4);
+              //     break;
+
+              //   case IPP_QUALITY_DRAFT:
+              //     ippSetInteger(printer->attrs , &attr , i , 4);
+              //     break;
+              // }
+          }
+    }
+         
+
+        
+
+        
+
+
+    }
+
+
+
+  // _papplRWUnlock(printer);
+
+
+
+
+
+
+
+
+
+    // now that we have all the things in requested-attribute we set those values in client instance ..
   _papplPrinterCopyAttributesNoLock(printer, client, ra, ippGetString(ippFindAttribute(client->request, "document-format", IPP_TAG_MIMETYPE), 0, NULL));
+
+  // print the values that you have added in client->response 
+
+
+// const char *attr_name = "job-presets-supported";
+// ipp_attribute_t *attr;
+
+// // // Find the attribute with the given name and value in the IPP response
+// attr = ippFindAttribute(client->response, attr_name, IPP_TAG_KEYWORD);
+
+// if(attr)
+// {
+//   printf("So finally you get the attribute from client->response object \n");
+// }
+// while (attr) {
+//     int count = ippGetCount(attr);
+//     for (int i = 0; i < count; i++) {
+//         const char *attr_val = ippGetString(attr, i, NULL);
+//         if (attr_val && strcmp(attr_val, attr_value) == 0) {
+//             // Attribute with the specified value "Ankit" found
+//             printf("Attribute found: %s\n", attr_name);
+//             break;
+//         }
+//     }
+//     // Get the next attribute with the same name
+//     attr = ippFindNextAttribute(client->response, attr_name, IPP_TAG_KEYWORD);
+// }
+
+  
+
+
+
+
+
+
+
+
   _papplRWUnlock(printer);
   _papplRWUnlock(printer->system);
 
