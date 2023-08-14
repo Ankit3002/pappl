@@ -354,6 +354,8 @@ _papplMainloopAddPrinterURI(
   httpAssembleURI(HTTP_URI_CODING_ALL, uri, sizeof(uri), "ipp", NULL, "localhost", 0, resource);
 
   ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
+  printf("finally the value of printer uri that we have is --> %s\n", uri);
+
 }
 
 
@@ -369,8 +371,13 @@ _papplMainloopConnect(
   http_t	*http;			// HTTP connection
   char		sockname[1024];		// Socket filename
 
-
+  // checking whether server exist already or not ,... you can check over here ...
   // See if the server is running...
+
+  char *server_path_me = _papplMainloopGetServerPath(base_name, getuid(), sockname, sizeof(sockname));
+  int server_port = _papplMainloopGetServerPort(base_name);
+  printf("The value of the port that we have is --> %d\n", server_port);
+  printf("The value of server_path we have is ---> %s\n", server_path_me);
   http = httpConnect(_papplMainloopGetServerPath(base_name, getuid(), sockname, sizeof(sockname)), _papplMainloopGetServerPort(base_name), NULL, AF_UNSPEC, HTTP_ENCRYPTION_IF_REQUESTED, 1, 30000, NULL);
 
 #if !_WIN32
@@ -380,6 +387,7 @@ _papplMainloopConnect(
     http = httpConnect(_papplMainloopGetServerPath(base_name, 0, sockname, sizeof(sockname)), _papplMainloopGetServerPort(base_name), NULL, AF_UNSPEC, HTTP_ENCRYPTION_IF_REQUESTED, 1, 30000, NULL);
   }
 #endif // !_WIN32
+
 
   if (!http && auto_start)
   {

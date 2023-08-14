@@ -720,7 +720,7 @@ papplPrinterCreate(
     IPP_OP_CANCEL_JOB,
     IPP_OP_GET_JOB_ATTRIBUTES,
     IPP_OP_GET_JOBS,
-    IPP_OP_GET_PRINTER_ATTRIBUTES,
+    IPP_OP_GET_PRINTER_ATTRIBUTES,   // this will add the operation to fetch the printer attributes ...
     IPP_OP_PAUSE_PRINTER,
     IPP_OP_RESUME_PRINTER,
     IPP_OP_SET_PRINTER_ATTRIBUTES,
@@ -1175,39 +1175,41 @@ papplPrinterCreate(
   cups_array_t *presets = printer->presets;
   const char * preset_sending[cupsArrayCount(presets)];
 
-  for (cups_len_t x = 0; x < cupsArrayCount(presets); x++)
-  {
-    pappl_pr_preset_data_t *preset_here = cupsArrayGetElement(presets, x);
-    const char *name_preset = strdup(preset_here->name);
-    preset_sending[x] = strdup(name_preset);
 
-        printf("the name of the FINALLY_PRESET  is --> %s\n", preset_sending[x]);
-  }
-
-
-  int number = (int)(sizeof(preset_sending) / sizeof(preset_sending[0]));
-  printf("the length_of_job_array is --> %d\n", number);
-
-
+  /*
+   *  add the presets in the printer->attrs object that I have created ...
+   */
 
 
       _papplRWLockWrite(system);
 
-  // add job-presets-supported over here ...
-  ippAddStrings(printer->attrs, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-presets-supported", (int)(sizeof(preset_sending) / sizeof(preset_sending[0])), NULL, preset_sending);
 
+  // for (cups_len_t x = 0; x < cupsArrayCount(presets); x++)
+  // {
+  //     pappl_pr_preset_data_t *preset_here = cupsArrayGetElement(presets, x);
+  //     // Add attributes from your struct to the collection
+  //     ipp_t* preset_collection = ippNew();
+  //     ippAddString(presetCollection, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "name", NULL, presetData.name);
 
+  //     ipp_attribute_t *collectionAttr = ippAddCollection(printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", presetCollection);
 
+  //     // Release the memory of the collection (it's duplicated in the attribute)
+  //     ippDelete(presetCollection);
+  // }
 
+    // fetch the preset object ...
+    pappl_pr_preset_data_t * preset_here = cupsArrayGetElement(presets, 0);
+    // printf("The value of the name of the pre ---****************%s\n", preset_here->name);
+    // create ipp object to hold preset ...
+    ipp_t* preset_collection = ippNew();
+    // add values in that ipp preset object from struct preset object ...
+    ippAddString(preset_collection, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "name", NULL, preset_here->name);
+    // add ipp one into the printer->attrs...
+    ippAddCollection(printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", preset_collection);
     _papplRWUnlock(system);
     _papplSystemConfigChanged(system);
 
 
-
-
-
-
-      
 
   // Do any post-creation work...
   if (system->create_cb)

@@ -81,6 +81,8 @@ _papplPrinterCopyAttributesNoLock(
 
   _papplCopyAttributes(client->response, printer->attrs, ra, IPP_TAG_ZERO, IPP_TAG_CUPS_CONST);
 
+  
+
 
 
 
@@ -103,610 +105,610 @@ _papplPrinterCopyAttributesNoLock(
 
 
 
-  if (!ra || cupsArrayFind(ra, "copies-supported"))
-  {
+//   if (!ra || cupsArrayFind(ra, "copies-supported"))
+//   {
 
-    printf("copies-supported is working fine \n");
-    // Filter copies-supported value based on the document format...
-    // (no copy support for streaming raster formats)
-    if (format && (!strcmp(format, "image/pwg-raster") || !strcmp(format, "image/urf")))
-      ippAddRange(client->response, IPP_TAG_PRINTER, "copies-supported", 1, 1);
-    else
-      ippAddRange(client->response, IPP_TAG_PRINTER, "copies-supported", 1, 999);
-  }
+//     printf("copies-supported is working fine \n");
+//     // Filter copies-supported value based on the document format...
+//     // (no copy support for streaming raster formats)
+//     if (format && (!strcmp(format, "image/pwg-raster") || !strcmp(format, "image/urf")))
+//       ippAddRange(client->response, IPP_TAG_PRINTER, "copies-supported", 1, 1);
+//     else
+//       ippAddRange(client->response, IPP_TAG_PRINTER, "copies-supported", 1, 999);
+//   }
 
-  if (!ra || cupsArrayFind(ra, "identify-actions-default"))
-  {
-    printf("identify-actions-default is working fine \n");
+//   if (!ra || cupsArrayFind(ra, "identify-actions-default"))
+//   {
+//     printf("identify-actions-default is working fine \n");
 
-    for (num_values = 0, bit = PAPPL_IDENTIFY_ACTIONS_DISPLAY; bit <= PAPPL_IDENTIFY_ACTIONS_SPEAK; bit *= 2)
-    {
-      if (data->identify_default & bit)
-	svalues[num_values ++] = _papplIdentifyActionsString(bit);
-    }
+//     for (num_values = 0, bit = PAPPL_IDENTIFY_ACTIONS_DISPLAY; bit <= PAPPL_IDENTIFY_ACTIONS_SPEAK; bit *= 2)
+//     {
+//       if (data->identify_default & bit)
+// 	svalues[num_values ++] = _papplIdentifyActionsString(bit);
+//     }
 
-    if (num_values > 0)
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "identify-actions-default", IPP_NUM_CAST num_values, NULL, svalues);
-    else
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "identify-actions-default", NULL, "none");
-  }
+//     if (num_values > 0)
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "identify-actions-default", IPP_NUM_CAST num_values, NULL, svalues);
+//     else
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "identify-actions-default", NULL, "none");
+//   }
 
-  if (printer->max_preserved_jobs > 0)
-  {
-    static const char * const job_retain_until[] =
-    {					// job-retain-until-supported values
-      "day-time",
-      "evening",
-      "indefinite",
-      "night",
-      "no-hold",
-      "second-shift",
-      "third-shift",
-      "weekend"
-    };
+//   if (printer->max_preserved_jobs > 0)
+//   {
+//     static const char * const job_retain_until[] =
+//     {					// job-retain-until-supported values
+//       "day-time",
+//       "evening",
+//       "indefinite",
+//       "night",
+//       "no-hold",
+//       "second-shift",
+//       "third-shift",
+//       "weekend"
+//     };
 
-    if (!ra || cupsArrayFind(ra, "job-retain-until-default"))
-    {
-    printf("job-retain-until-default is working fine \n");
+//     if (!ra || cupsArrayFind(ra, "job-retain-until-default"))
+//     {
+//     printf("job-retain-until-default is working fine \n");
 
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-retain-until-default", NULL, "none");
-    }
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-retain-until-default", NULL, "none");
+//     }
       
 
-    if (!ra || cupsArrayFind(ra, "job-retain-until-interval-default"))
-      ippAddOutOfBand(client->response, IPP_TAG_PRINTER, IPP_TAG_NOVALUE, "job-retain-until-interval-default");
-
-    if (!ra || cupsArrayFind(ra, "job-retain-until-interval-supported"))
-      ippAddRange(client->response, IPP_TAG_PRINTER, "job-retain-until-interval-supported", 0, 86400);
-
-    if (!ra || cupsArrayFind(ra, "job-retain-until-supported"))
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-retain-until-supported", (cups_len_t)(sizeof(job_retain_until) / sizeof(job_retain_until[0])), NULL, job_retain_until);
-
-    if (!ra || cupsArrayFind(ra, "job-retain-until-time-supported"))
-      ippAddRange(client->response, IPP_TAG_PRINTER, "job-retain-until-time-supported", 0, 86400);
-  }
-
-  if (!ra || cupsArrayFind(ra, "job-spooling-supported"))
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-spooling-supported", NULL, (printer->max_active_jobs == 1 || (format && (!strcmp(format, "image/pwg-raster") || !strcmp(format, "image/urf")))) ? "stream" : "spool");
-
-  if ((!ra || cupsArrayFind(ra, "label-mode-configured")) && data->mode_configured)
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "label-mode-configured", NULL, _papplLabelModeString(data->mode_configured));
-
-  if ((!ra || cupsArrayFind(ra, "label-tear-offset-configured")) && data->tear_offset_supported[1] > 0)
-    ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "label-tear-offset-configured", data->tear_offset_configured);
-
-  if (printer->num_supply > 0)
-  {
-    pappl_supply_t *supply = printer->supply;
-					// Supply values...
-
-    if (!ra || cupsArrayFind(ra, "marker-colors"))
-    {
-      for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
-        svalues[i] = _papplMarkerColorString(supply[i].color);
-
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_NAME), "marker-colors", IPP_NUM_CAST printer->num_supply, NULL, svalues);
-    }
-
-    if (!ra || cupsArrayFind(ra, "marker-high-levels"))
-    {
-      for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
-        ivalues[i] = supply[i].is_consumed ? 100 : 90;
-
-      ippAddIntegers(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "marker-high-levels", IPP_NUM_CAST printer->num_supply, ivalues);
-    }
-
-    if (!ra || cupsArrayFind(ra, "marker-levels"))
-    {
-      for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
-        ivalues[i] = supply[i].level;
-
-      ippAddIntegers(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "marker-levels", IPP_NUM_CAST printer->num_supply, ivalues);
-    }
-
-    if (!ra || cupsArrayFind(ra, "marker-low-levels"))
-    {
-      for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
-        ivalues[i] = supply[i].is_consumed ? 10 : 0;
-
-      ippAddIntegers(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "marker-low-levels", IPP_NUM_CAST printer->num_supply, ivalues);
-    }
-
-    if (!ra || cupsArrayFind(ra, "marker-names"))
-    {
-      for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
-        svalues[i] = supply[i].description;
-
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_NAME, "marker-names", IPP_NUM_CAST printer->num_supply, NULL, svalues);
-    }
-
-    if (!ra || cupsArrayFind(ra, "marker-types"))
-    {
-      for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
-        svalues[i] = _papplMarkerTypeString(supply[i].type);
-
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "marker-types", IPP_NUM_CAST printer->num_supply, NULL, svalues);
-    }
-  }
-
-  if ((!ra || cupsArrayFind(ra, "media-col-default")) && data->media_default.size_name[0])
-  {
-        printf("media-col-default is working fine \n");
-    ipp_t *col = _papplMediaColExport(&printer->driver_data, &data->media_default, 0);
-					// Collection value
-
-    ippAddCollection(client->response, IPP_TAG_PRINTER, "media-col-default", col);
-    ippDelete(col);
-  }
-
-  if (!ra || cupsArrayFind(ra, "media-col-ready"))
-  {
-        printf("media-col-ready is working fine \n");
-    cups_len_t		j,		// Looping var
-			count;		// Number of values
-    ipp_t		*col;		// Collection value
-    ipp_attribute_t	*attr;		// media-col-ready attribute
-    pappl_media_col_t	media;		// Current media...
-
-    for (i = 0, count = 0; i < (cups_len_t)printer->num_ready; i ++)
-    {
-      if (data->media_ready[i].size_name[0])
-        count ++;
-    }
-
-    if (data->borderless && (data->bottom_top != 0 || data->left_right != 0))
-      count *= 2;			// Need to report ready media for borderless, too...
-
-    if (count > 0)
-    {
-      attr = ippAddCollections(client->response, IPP_TAG_PRINTER, "media-col-ready", IPP_NUM_CAST count, NULL);
-
-      for (i = 0, j = 0; i < (cups_len_t)printer->num_ready && j < count; i ++)
-      {
-	if (data->media_ready[i].size_name[0])
-	{
-          if (data->borderless && (data->bottom_top != 0 || data->left_right != 0))
-	  {
-	    // Report both bordered and borderless media-col values...
-	    media = data->media_ready[i];
-
-	    media.bottom_margin = media.top_margin   = data->bottom_top;
-	    media.left_margin   = media.right_margin = data->left_right;
-	    col = _papplMediaColExport(&printer->driver_data, &media, 0);
-	    ippSetCollection(client->response, &attr, IPP_NUM_CAST j ++, col);
-	    ippDelete(col);
-
-	    media.bottom_margin = media.top_margin   = 0;
-	    media.left_margin   = media.right_margin = 0;
-	    col = _papplMediaColExport(&printer->driver_data, &media, 0);
-	    ippSetCollection(client->response, &attr, IPP_NUM_CAST j ++, col);
-	    ippDelete(col);
-	  }
-	  else
-	  {
-	    // Just report the single media-col value...
-	    col = _papplMediaColExport(&printer->driver_data, data->media_ready + i, 0);
-	    ippSetCollection(client->response, &attr, IPP_NUM_CAST j ++, col);
-	    ippDelete(col);
-	  }
-	}
-      }
-    }
-  }
-
-  if ((!ra || cupsArrayFind(ra, "media-default")) && data->media_default.size_name[0])
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "media-default", NULL, data->media_default.size_name);
-
-  if (!ra || cupsArrayFind(ra, "media-ready"))
-  {
-    cups_len_t		j,		// Looping vars
-			count;		// Number of values
-    ipp_attribute_t	*attr;		// media-col-ready attribute
-
-    for (i = 0, count = 0; i < (cups_len_t)printer->num_ready; i ++)
-    {
-      if (data->media_ready[i].size_name[0])
-        count ++;
-    }
-
-    if (count > 0)
-    {
-      attr = ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "media-ready", IPP_NUM_CAST count, NULL, NULL);
-
-      for (i = 0, j = 0; i < (cups_len_t)printer->num_ready && j < count; i ++)
-      {
-	if (data->media_ready[i].size_name[0])
-	  ippSetString(client->response, &attr, IPP_NUM_CAST j ++, data->media_ready[i].size_name);
-      }
-    }
-  }
-
-  if (!ra || cupsArrayFind(ra, "multiple-document-handling-default"))
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "multiple-document-handling-default", NULL, "separate-documents-collated-copies");
-
-
-
-  // let's tweak this one ...
-
-
-  // if(!ra || cupsArrayFind(ra , "job-presets-supported"))
-  // {
-  //   ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "job-presets-supported", 3);
-  // }
-
-
-  if (!ra || cupsArrayFind(ra, "orientation-requested-default"))
-  {
-        printf("orientation-requested-default is working fine \n");
-    // printf("The value of orient-default integer is --> %d\n", (int)data->orient_default);
-    ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "orientation-requested-default", (int)data->orient_default);
-  }
-
-
-  if (!ra || cupsArrayFind(ra, "output-bin-default"))
-  {
-        printf("output-bin-default is working fine \n");
-    if (data->num_bin > 0)
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "output-bin-default", NULL, data->bin[data->bin_default]);
-    else if (data->output_face_up)
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "output-bin-default", NULL, "face-up");
-    else
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "output-bin-default", NULL, "face-down");
-  }
-
-  if ((!ra || cupsArrayFind(ra, "print-color-mode-default")) && data->color_default)
-  {
-    printf("print-color-mode-default is working fine \n");
-        ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-color-mode-default", NULL, _papplColorModeString(data->color_default));
-
-  }
-
-  if (!ra || cupsArrayFind(ra, "print-content-optimize-default"))
-  {
-        printf("print-content-optimize-default is working fine \n");
-    if (data->content_default)
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-content-optimize-default", NULL, _papplContentString(data->content_default));
-    else
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-content-optimize-default", NULL, "auto");
-  }
-
-  if (!ra || cupsArrayFind(ra, "print-quality-default"))
-  {
-        printf("print-quality-optimize-default is working fine \n");
-
-    if (data->quality_default)
-      ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "print-quality-default", (int)data->quality_default);
-    else
-      ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "print-quality-default", IPP_QUALITY_NORMAL);
-  }
-
-  if (!ra || cupsArrayFind(ra, "print-scaling-default"))
-  {
-        printf("print-scaling-default is working fine \n");
-
-    if (data->scaling_default)
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-scaling-default", "Ankit", _papplScalingString(data->scaling_default));
-    else
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-scaling-default", "Ankit", "auto");
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-config-change-date-time"))
-  {
-        printf("printer-config-change-date-time is working fine \n");
-
-        ippAddDate(client->response, IPP_TAG_PRINTER, "printer-config-change-date-time", ippTimeToDate(printer->config_time));
-
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-config-change-time"))
-  {
-    if (printer->config_time > printer->start_time)
-      ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-config-change-time", (int)(printer->config_time - printer->start_time));
-    else
-      ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-config-change-time", 1);
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-contact-col"))
-  {
-    ipp_t *col = _papplContactExport(&printer->contact);
-    ippAddCollection(client->response, IPP_TAG_PRINTER, "printer-contact-col", col);
-    ippDelete(col);
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-current-time"))
-    ippAddDate(client->response, IPP_TAG_PRINTER, "printer-current-time", ippTimeToDate(time(NULL)));
-
-  if ((!ra || cupsArrayFind(ra, "printer-darkness-configured")) && data->darkness_supported > 0)
-  {
-        printf("printer-darkness-configured is working fine \n");
-
-        ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-darkness-configured", data->darkness_configured);
-
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-dns-sd-name"))
-  {
-        printf("printer-dns-sd-name is working fine \n");
-
-        ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_NAME, "printer-dns-sd-name", NULL, printer->dns_sd_name ? printer->dns_sd_name : "");
-
-  }
-
-//  _papplRWLockRead(client->system);
-  _papplSystemExportVersions(client->system, client->response, IPP_TAG_PRINTER, ra);
-//  _papplRWUnlock(client->system);
-
-  if (!ra || cupsArrayFind(ra, "printer-geo-location"))
-  {
-    if (printer->geo_location)
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-geo-location", NULL, printer->geo_location);
-    else
-      ippAddOutOfBand(client->response, IPP_TAG_PRINTER, IPP_TAG_UNKNOWN, "printer-geo-location");
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-icons"))
-  {
-    char	uris[3][1024];		// Buffers for URIs
-    const char	*values[3];		// Values for attribute
-
-    httpAssembleURIf(HTTP_URI_CODING_ALL, uris[0], sizeof(uris[0]), webscheme, NULL, client->host_field, client->host_port, "%s/icon-sm.png", printer->uriname);
-    httpAssembleURIf(HTTP_URI_CODING_ALL, uris[1], sizeof(uris[1]), webscheme, NULL, client->host_field, client->host_port, "%s/icon-md.png", printer->uriname);
-    httpAssembleURIf(HTTP_URI_CODING_ALL, uris[2], sizeof(uris[2]), webscheme, NULL, client->host_field, client->host_port, "%s/icon-lg.png", printer->uriname);
-
-    values[0] = uris[0];
-    values[1] = uris[1];
-    values[2] = uris[2];
-
-    ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-icons", 3, NULL, values);
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-impressions-completed"))
-    ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-impressions-completed", printer->impcompleted);
-
-  if (!ra || cupsArrayFind(ra, "printer-input-tray"))
-  {
-    ipp_attribute_t	*attr = NULL;	// "printer-input-tray" attribute
-    char		value[256];	// Value for current tray
-    pappl_media_col_t	*media;		// Media in the tray
-
-    for (i = 0, media = data->media_ready; i < (cups_len_t)data->num_source; i ++, media ++)
-    {
-      const char	*type;		// Tray type
-
-      if (!strcmp(data->source[i], "manual"))
-        type = "sheetFeedManual";
-      else if (!strcmp(data->source[i], "by-pass-tray"))
-        type = "sheetFeedAutoNonRemovableTray";
-      else
-        type = "sheetFeedAutoRemovableTray";
-
-      snprintf(value, sizeof(value), "type=%s;mediafeed=%d;mediaxfeed=%d;maxcapacity=%d;level=-2;status=0;name=%s;", type, media->size_length, media->size_width, !strcmp(media->source, "manual") ? 1 : -2, media->source);
-
-      if (attr)
-        ippSetOctetString(client->response, &attr, ippGetCount(attr), value, IPP_NUM_CAST strlen(value));
-      else
-        attr = ippAddOctetString(client->response, IPP_TAG_PRINTER, "printer-input-tray", value, IPP_NUM_CAST strlen(value));
-    }
-
-    // The "auto" tray is a dummy entry...
-    papplCopyString(value, "type=other;mediafeed=0;mediaxfeed=0;maxcapacity=-2;level=-2;status=0;name=auto;", sizeof(value));
-    ippSetOctetString(client->response, &attr, ippGetCount(attr), value, IPP_NUM_CAST strlen(value));
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-location"))
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_TEXT, "printer-location", NULL, printer->location ? printer->location : "");
-
-  if (!ra || cupsArrayFind(ra, "printer-more-info"))
-  {
-    char	uri[1024];		// URI value
-
-    httpAssembleURIf(HTTP_URI_CODING_ALL, uri, sizeof(uri), webscheme, NULL, client->host_field, client->host_port, "%s/", printer->uriname);
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-more-info", NULL, uri);
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-organization"))
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_TEXT, "printer-organization", NULL, printer->organization ? printer->organization : "");
-
-  if (!ra || cupsArrayFind(ra, "printer-organizational-unit"))
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_TEXT, "printer-organizational-unit", NULL, printer->org_unit ? printer->org_unit : "");
-
-  if (!ra || cupsArrayFind(ra, "printer-resolution-default"))
-    ippAddResolution(client->response, IPP_TAG_PRINTER, "printer-resolution-default", IPP_RES_PER_INCH, data->x_default, data->y_default);
-
-  if (!ra || cupsArrayFind(ra, "printer-speed-default"))
-    ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-speed-default", data->speed_default);
-
-  if (!ra || cupsArrayFind(ra, "printer-state-change-date-time"))
-    ippAddDate(client->response, IPP_TAG_PRINTER, "printer-state-change-date-time", ippTimeToDate(printer->state_time));
-
-  if (!ra || cupsArrayFind(ra, "printer-state-change-time"))
-    ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-state-change-time", (int)(printer->state_time - printer->start_time));
-
-  if (!ra || cupsArrayFind(ra, "printer-strings-languages-supported"))
-  {
-    _pappl_resource_t	*r;		// Current resource
-    cups_len_t		rcount;		// Number of resources
-
-//    _papplRWLockRead(printer->system);
-
-    // Cannot use cupsArrayGetFirst/Last since other threads might be iterating
-    // this array...
-    for (i = 0, num_values = 0, rcount = cupsArrayGetCount(printer->system->resources); i < rcount && num_values < (cups_len_t)(sizeof(svalues) / sizeof(svalues[0])); i ++)
-    {
-      r = (_pappl_resource_t *)cupsArrayGetElement(printer->system->resources, (size_t)i);
-
-      if (r->language)
-        svalues[num_values ++] = r->language;
-    }
-//    _papplRWUnlock(printer->system);
-
-    if (num_values > 0)
-      ippAddStrings(printer->attrs, IPP_TAG_PRINTER, IPP_TAG_LANGUAGE, "printer-strings-languages-supported", IPP_NUM_CAST num_values, NULL, svalues);
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-strings-uri"))
-  {
-    const char	*lang = ippGetString(ippFindAttribute(client->request, "attributes-natural-language", IPP_TAG_LANGUAGE), 0, NULL);
-					// Language
-    char	baselang[3],		// Base language
-		uri[1024];		// Strings file URI
-    _pappl_resource_t	*r;		// Current resource
-    cups_len_t	rcount;			// Number of resources
-
-    papplCopyString(baselang, lang, sizeof(baselang));
-
-//    _papplRWLockRead(printer->system);
-
-    // Cannot use cupsArrayGetFirst/Last since other threads might be iterating
-    // this array...
-    for (i = 0, rcount = cupsArrayGetCount(printer->system->resources); i < rcount; i ++)
-    {
-      r = (_pappl_resource_t *)cupsArrayGetElement(printer->system->resources, i);
-
-      if (r->language && (!strcmp(r->language, lang) || !strcmp(r->language, baselang)))
-      {
-        httpAssembleURI(HTTP_URI_CODING_ALL, uri, sizeof(uri), webscheme, NULL, client->host_field, client->host_port, r->path);
-        ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-strings-uri", NULL, uri);
-        break;
-      }
-    }
-
-//    _papplRWUnlock(printer->system);
-  }
-
-  if (printer->num_supply > 0)
-  {
-    pappl_supply_t	 *supply = printer->supply;
-					// Supply values...
-
-    if (!ra || cupsArrayFind(ra, "printer-supply"))
-    {
-      char		value[256];	// "printer-supply" value
-      ipp_attribute_t	*attr = NULL;	// "printer-supply" attribute
-
-      for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
-      {
-	snprintf(value, sizeof(value), "index=%u;type=%s;maxcapacity=100;level=%d;colorantname=%s;", (unsigned)i, _papplSupplyTypeString(supply[i].type), supply[i].level, _papplSupplyColorString(supply[i].color));
-
-	if (attr)
-	  ippSetOctetString(client->response, &attr, ippGetCount(attr), value, IPP_NUM_CAST strlen(value));
-	else
-	  attr = ippAddOctetString(client->response, IPP_TAG_PRINTER, "printer-supply", value, IPP_NUM_CAST strlen(value));
-      }
-    }
-
-    if (!ra || cupsArrayFind(ra, "printer-supply-description"))
-    {
-      for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
-        svalues[i] = supply[i].description;
-
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_TEXT, "printer-supply-description", IPP_NUM_CAST printer->num_supply, NULL, svalues);
-    }
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-supply-info-uri"))
-  {
-    char	uri[1024];		// URI value
-
-    httpAssembleURIf(HTTP_URI_CODING_ALL, uri, sizeof(uri), webscheme, NULL, client->host_field, client->host_port, "%s/supplies", printer->uriname);
-    ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-supply-info-uri", NULL, uri);
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-up-time"))
-    ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-up-time", (int)(time(NULL) - printer->start_time));
-
-  if (!ra || cupsArrayFind(ra, "printer-uri-supported"))
-  {
-    char	uris[2][1024];		// Buffers for URIs
-    const char	*values[2];		// Values for attribute
-
-    num_values = 0;
-
-    if (httpAddrIsLocalhost(httpGetAddress(client->http)) || !papplSystemGetTLSOnly(client->system))
-    {
-      httpAssembleURI(HTTP_URI_CODING_ALL, uris[num_values], sizeof(uris[0]), "ipp", NULL, client->host_field, client->host_port, printer->resource);
-      values[num_values] = uris[num_values];
-      num_values ++;
-    }
-
-    if (!httpAddrIsLocalhost(httpGetAddress(client->http)) && !(client->system->options & PAPPL_SOPTIONS_NO_TLS))
-    {
-      httpAssembleURI(HTTP_URI_CODING_ALL, uris[num_values], sizeof(uris[0]), "ipps", NULL, client->host_field, client->host_port, printer->resource);
-      values[num_values] = uris[num_values];
-      num_values ++;
-    }
-
-    if (num_values > 0)
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-uri-supported", IPP_NUM_CAST num_values, NULL, values);
-  }
-
-  if (client->system->wifi_status_cb && httpAddrIsLocalhost(httpGetAddress(client->http)) && (!ra || cupsArrayFind(ra, "printer-wifi-ssid") || cupsArrayFind(ra, "printer-wifi-state")))
-  {
-    // Get Wi-Fi status...
-    pappl_wifi_t	wifi;		// Wi-Fi status
-
-    if ((client->system->wifi_status_cb)(client->system, client->system->wifi_cbdata, &wifi))
-    {
-      if (!ra || cupsArrayFind(ra, "printer-wifi-ssid"))
-        ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_NAME, "printer-wifi-ssid", NULL, wifi.ssid);
-
-      if (!ra || cupsArrayFind(ra, "printer-wifi-state"))
-        ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "printer-wifi-state", (int)wifi.state);
-    }
-  }
-
-  if (!ra || cupsArrayFind(ra, "printer-xri-supported"))
-    _papplPrinterCopyXRINoLock(printer, client->response, client);
-
-  if (!ra || cupsArrayFind(ra, "queued-job-count"))
-    ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "queued-job-count", (int)cupsArrayGetCount(printer->active_jobs));
-
-  if (!ra || cupsArrayFind(ra, "sides-default"))
-  {
-    if (data->sides_default)
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "sides-default", NULL, _papplSidesString(data->sides_default));
-    else
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "sides-default", NULL, "one-sided");
-  }
-
-  if (!ra || cupsArrayFind(ra, "uri-authentication-supported"))
-  {
-    // For each supported printer-uri value, report whether authentication is
-    // supported.  Since we only support authentication over a secure (TLS)
-    // channel, the value is always 'none' for the "ipp" URI and either 'none'
-    // or 'basic' for the "ipps" URI...
-    if (httpAddrIsLocalhost(httpGetAddress(client->http)) || (client->system->options & PAPPL_SOPTIONS_NO_TLS))
-    {
-      ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", NULL, "none");
-    }
-    else if (papplSystemGetTLSOnly(client->system))
-    {
-      if (papplSystemGetAuthService(client->system))
-        ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", NULL, "basic");
-      else
-        ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", NULL, "none");
-    }
-    else if (papplSystemGetAuthService(client->system))
-    {
-      static const char * const uri_authentication_basic[] =
-      {					// uri-authentication-supported values
-	"none",
-	"basic"
-      };
-
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", 2, NULL, uri_authentication_basic);
-    }
-    else
-    {
-      static const char * const uri_authentication_none[] =
-      {					// uri-authentication-supported values
-	"none",
-	"none"
-      };
-
-      ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", 2, NULL, uri_authentication_none);
-    }
-  }
+//     if (!ra || cupsArrayFind(ra, "job-retain-until-interval-default"))
+//       ippAddOutOfBand(client->response, IPP_TAG_PRINTER, IPP_TAG_NOVALUE, "job-retain-until-interval-default");
+
+//     if (!ra || cupsArrayFind(ra, "job-retain-until-interval-supported"))
+//       ippAddRange(client->response, IPP_TAG_PRINTER, "job-retain-until-interval-supported", 0, 86400);
+
+//     if (!ra || cupsArrayFind(ra, "job-retain-until-supported"))
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-retain-until-supported", (cups_len_t)(sizeof(job_retain_until) / sizeof(job_retain_until[0])), NULL, job_retain_until);
+
+//     if (!ra || cupsArrayFind(ra, "job-retain-until-time-supported"))
+//       ippAddRange(client->response, IPP_TAG_PRINTER, "job-retain-until-time-supported", 0, 86400);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "job-spooling-supported"))
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "job-spooling-supported", NULL, (printer->max_active_jobs == 1 || (format && (!strcmp(format, "image/pwg-raster") || !strcmp(format, "image/urf")))) ? "stream" : "spool");
+
+//   if ((!ra || cupsArrayFind(ra, "label-mode-configured")) && data->mode_configured)
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "label-mode-configured", NULL, _papplLabelModeString(data->mode_configured));
+
+//   if ((!ra || cupsArrayFind(ra, "label-tear-offset-configured")) && data->tear_offset_supported[1] > 0)
+//     ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "label-tear-offset-configured", data->tear_offset_configured);
+
+//   if (printer->num_supply > 0)
+//   {
+//     pappl_supply_t *supply = printer->supply;
+// 					// Supply values...
+
+//     if (!ra || cupsArrayFind(ra, "marker-colors"))
+//     {
+//       for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
+//         svalues[i] = _papplMarkerColorString(supply[i].color);
+
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_NAME), "marker-colors", IPP_NUM_CAST printer->num_supply, NULL, svalues);
+//     }
+
+//     if (!ra || cupsArrayFind(ra, "marker-high-levels"))
+//     {
+//       for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
+//         ivalues[i] = supply[i].is_consumed ? 100 : 90;
+
+//       ippAddIntegers(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "marker-high-levels", IPP_NUM_CAST printer->num_supply, ivalues);
+//     }
+
+//     if (!ra || cupsArrayFind(ra, "marker-levels"))
+//     {
+//       for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
+//         ivalues[i] = supply[i].level;
+
+//       ippAddIntegers(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "marker-levels", IPP_NUM_CAST printer->num_supply, ivalues);
+//     }
+
+//     if (!ra || cupsArrayFind(ra, "marker-low-levels"))
+//     {
+//       for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
+//         ivalues[i] = supply[i].is_consumed ? 10 : 0;
+
+//       ippAddIntegers(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "marker-low-levels", IPP_NUM_CAST printer->num_supply, ivalues);
+//     }
+
+//     if (!ra || cupsArrayFind(ra, "marker-names"))
+//     {
+//       for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
+//         svalues[i] = supply[i].description;
+
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_NAME, "marker-names", IPP_NUM_CAST printer->num_supply, NULL, svalues);
+//     }
+
+//     if (!ra || cupsArrayFind(ra, "marker-types"))
+//     {
+//       for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
+//         svalues[i] = _papplMarkerTypeString(supply[i].type);
+
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "marker-types", IPP_NUM_CAST printer->num_supply, NULL, svalues);
+//     }
+//   }
+
+//   if ((!ra || cupsArrayFind(ra, "media-col-default")) && data->media_default.size_name[0])
+//   {
+//         printf("media-col-default is working fine \n");
+//     ipp_t *col = _papplMediaColExport(&printer->driver_data, &data->media_default, 0);
+// 					// Collection value
+
+//     ippAddCollection(client->response, IPP_TAG_PRINTER, "media-col-default", col);
+//     ippDelete(col);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "media-col-ready"))
+//   {
+//         printf("media-col-ready is working fine \n");
+//     cups_len_t		j,		// Looping var
+// 			count;		// Number of values
+//     ipp_t		*col;		// Collection value
+//     ipp_attribute_t	*attr;		// media-col-ready attribute
+//     pappl_media_col_t	media;		// Current media...
+
+//     for (i = 0, count = 0; i < (cups_len_t)printer->num_ready; i ++)
+//     {
+//       if (data->media_ready[i].size_name[0])
+//         count ++;
+//     }
+
+//     if (data->borderless && (data->bottom_top != 0 || data->left_right != 0))
+//       count *= 2;			// Need to report ready media for borderless, too...
+
+//     if (count > 0)
+//     {
+//       attr = ippAddCollections(client->response, IPP_TAG_PRINTER, "media-col-ready", IPP_NUM_CAST count, NULL);
+
+//       for (i = 0, j = 0; i < (cups_len_t)printer->num_ready && j < count; i ++)
+//       {
+// 	if (data->media_ready[i].size_name[0])
+// 	{
+//           if (data->borderless && (data->bottom_top != 0 || data->left_right != 0))
+// 	  {
+// 	    // Report both bordered and borderless media-col values...
+// 	    media = data->media_ready[i];
+
+// 	    media.bottom_margin = media.top_margin   = data->bottom_top;
+// 	    media.left_margin   = media.right_margin = data->left_right;
+// 	    col = _papplMediaColExport(&printer->driver_data, &media, 0);
+// 	    ippSetCollection(client->response, &attr, IPP_NUM_CAST j ++, col);
+// 	    ippDelete(col);
+
+// 	    media.bottom_margin = media.top_margin   = 0;
+// 	    media.left_margin   = media.right_margin = 0;
+// 	    col = _papplMediaColExport(&printer->driver_data, &media, 0);
+// 	    ippSetCollection(client->response, &attr, IPP_NUM_CAST j ++, col);
+// 	    ippDelete(col);
+// 	  }
+// 	  else
+// 	  {
+// 	    // Just report the single media-col value...
+// 	    col = _papplMediaColExport(&printer->driver_data, data->media_ready + i, 0);
+// 	    ippSetCollection(client->response, &attr, IPP_NUM_CAST j ++, col);
+// 	    ippDelete(col);
+// 	  }
+// 	}
+//       }
+//     }
+//   }
+
+//   if ((!ra || cupsArrayFind(ra, "media-default")) && data->media_default.size_name[0])
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "media-default", NULL, data->media_default.size_name);
+
+//   if (!ra || cupsArrayFind(ra, "media-ready"))
+//   {
+//     cups_len_t		j,		// Looping vars
+// 			count;		// Number of values
+//     ipp_attribute_t	*attr;		// media-col-ready attribute
+
+//     for (i = 0, count = 0; i < (cups_len_t)printer->num_ready; i ++)
+//     {
+//       if (data->media_ready[i].size_name[0])
+//         count ++;
+//     }
+
+//     if (count > 0)
+//     {
+//       attr = ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "media-ready", IPP_NUM_CAST count, NULL, NULL);
+
+//       for (i = 0, j = 0; i < (cups_len_t)printer->num_ready && j < count; i ++)
+//       {
+// 	if (data->media_ready[i].size_name[0])
+// 	  ippSetString(client->response, &attr, IPP_NUM_CAST j ++, data->media_ready[i].size_name);
+//       }
+//     }
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "multiple-document-handling-default"))
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "multiple-document-handling-default", NULL, "separate-documents-collated-copies");
+
+
+
+//   // let's tweak this one ...
+
+
+//   // if(!ra || cupsArrayFind(ra , "job-presets-supported"))
+//   // {
+//   //   ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "job-presets-supported", 3);
+//   // }
+
+
+//   if (!ra || cupsArrayFind(ra, "orientation-requested-default"))
+//   {
+//         printf("orientation-requested-default is working fine \n");
+//     // printf("The value of orient-default integer is --> %d\n", (int)data->orient_default);
+//     ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "orientation-requested-default", (int)data->orient_default);
+//   }
+
+
+//   if (!ra || cupsArrayFind(ra, "output-bin-default"))
+//   {
+//         printf("output-bin-default is working fine \n");
+//     if (data->num_bin > 0)
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "output-bin-default", NULL, data->bin[data->bin_default]);
+//     else if (data->output_face_up)
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "output-bin-default", NULL, "face-up");
+//     else
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "output-bin-default", NULL, "face-down");
+//   }
+
+//   if ((!ra || cupsArrayFind(ra, "print-color-mode-default")) && data->color_default)
+//   {
+//     printf("print-color-mode-default is working fine \n");
+//         ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-color-mode-default", NULL, _papplColorModeString(data->color_default));
+
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "print-content-optimize-default"))
+//   {
+//         printf("print-content-optimize-default is working fine \n");
+//     if (data->content_default)
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-content-optimize-default", NULL, _papplContentString(data->content_default));
+//     else
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-content-optimize-default", NULL, "auto");
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "print-quality-default"))
+//   {
+//         printf("print-quality-optimize-default is working fine \n");
+
+//     if (data->quality_default)
+//       ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "print-quality-default", (int)data->quality_default);
+//     else
+//       ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "print-quality-default", IPP_QUALITY_NORMAL);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "print-scaling-default"))
+//   {
+//         printf("print-scaling-default is working fine \n");
+
+//     if (data->scaling_default)
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-scaling-default", "Ankit", _papplScalingString(data->scaling_default));
+//     else
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "print-scaling-default", "Ankit", "auto");
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-config-change-date-time"))
+//   {
+//         printf("printer-config-change-date-time is working fine \n");
+
+//         ippAddDate(client->response, IPP_TAG_PRINTER, "printer-config-change-date-time", ippTimeToDate(printer->config_time));
+
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-config-change-time"))
+//   {
+//     if (printer->config_time > printer->start_time)
+//       ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-config-change-time", (int)(printer->config_time - printer->start_time));
+//     else
+//       ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-config-change-time", 1);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-contact-col"))
+//   {
+//     ipp_t *col = _papplContactExport(&printer->contact);
+//     ippAddCollection(client->response, IPP_TAG_PRINTER, "printer-contact-col", col);
+//     ippDelete(col);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-current-time"))
+//     ippAddDate(client->response, IPP_TAG_PRINTER, "printer-current-time", ippTimeToDate(time(NULL)));
+
+//   if ((!ra || cupsArrayFind(ra, "printer-darkness-configured")) && data->darkness_supported > 0)
+//   {
+//         printf("printer-darkness-configured is working fine \n");
+
+//         ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-darkness-configured", data->darkness_configured);
+
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-dns-sd-name"))
+//   {
+//         printf("printer-dns-sd-name is working fine \n");
+
+//         ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_NAME, "printer-dns-sd-name", NULL, printer->dns_sd_name ? printer->dns_sd_name : "");
+
+//   }
+
+// //  _papplRWLockRead(client->system);
+//   _papplSystemExportVersions(client->system, client->response, IPP_TAG_PRINTER, ra);
+// //  _papplRWUnlock(client->system);
+
+//   if (!ra || cupsArrayFind(ra, "printer-geo-location"))
+//   {
+//     if (printer->geo_location)
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-geo-location", NULL, printer->geo_location);
+//     else
+//       ippAddOutOfBand(client->response, IPP_TAG_PRINTER, IPP_TAG_UNKNOWN, "printer-geo-location");
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-icons"))
+//   {
+//     char	uris[3][1024];		// Buffers for URIs
+//     const char	*values[3];		// Values for attribute
+
+//     httpAssembleURIf(HTTP_URI_CODING_ALL, uris[0], sizeof(uris[0]), webscheme, NULL, client->host_field, client->host_port, "%s/icon-sm.png", printer->uriname);
+//     httpAssembleURIf(HTTP_URI_CODING_ALL, uris[1], sizeof(uris[1]), webscheme, NULL, client->host_field, client->host_port, "%s/icon-md.png", printer->uriname);
+//     httpAssembleURIf(HTTP_URI_CODING_ALL, uris[2], sizeof(uris[2]), webscheme, NULL, client->host_field, client->host_port, "%s/icon-lg.png", printer->uriname);
+
+//     values[0] = uris[0];
+//     values[1] = uris[1];
+//     values[2] = uris[2];
+
+//     ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-icons", 3, NULL, values);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-impressions-completed"))
+//     ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-impressions-completed", printer->impcompleted);
+
+//   if (!ra || cupsArrayFind(ra, "printer-input-tray"))
+//   {
+//     ipp_attribute_t	*attr = NULL;	// "printer-input-tray" attribute
+//     char		value[256];	// Value for current tray
+//     pappl_media_col_t	*media;		// Media in the tray
+
+//     for (i = 0, media = data->media_ready; i < (cups_len_t)data->num_source; i ++, media ++)
+//     {
+//       const char	*type;		// Tray type
+
+//       if (!strcmp(data->source[i], "manual"))
+//         type = "sheetFeedManual";
+//       else if (!strcmp(data->source[i], "by-pass-tray"))
+//         type = "sheetFeedAutoNonRemovableTray";
+//       else
+//         type = "sheetFeedAutoRemovableTray";
+
+//       snprintf(value, sizeof(value), "type=%s;mediafeed=%d;mediaxfeed=%d;maxcapacity=%d;level=-2;status=0;name=%s;", type, media->size_length, media->size_width, !strcmp(media->source, "manual") ? 1 : -2, media->source);
+
+//       if (attr)
+//         ippSetOctetString(client->response, &attr, ippGetCount(attr), value, IPP_NUM_CAST strlen(value));
+//       else
+//         attr = ippAddOctetString(client->response, IPP_TAG_PRINTER, "printer-input-tray", value, IPP_NUM_CAST strlen(value));
+//     }
+
+//     // The "auto" tray is a dummy entry...
+//     papplCopyString(value, "type=other;mediafeed=0;mediaxfeed=0;maxcapacity=-2;level=-2;status=0;name=auto;", sizeof(value));
+//     ippSetOctetString(client->response, &attr, ippGetCount(attr), value, IPP_NUM_CAST strlen(value));
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-location"))
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_TEXT, "printer-location", NULL, printer->location ? printer->location : "");
+
+//   if (!ra || cupsArrayFind(ra, "printer-more-info"))
+//   {
+//     char	uri[1024];		// URI value
+
+//     httpAssembleURIf(HTTP_URI_CODING_ALL, uri, sizeof(uri), webscheme, NULL, client->host_field, client->host_port, "%s/", printer->uriname);
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-more-info", NULL, uri);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-organization"))
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_TEXT, "printer-organization", NULL, printer->organization ? printer->organization : "");
+
+//   if (!ra || cupsArrayFind(ra, "printer-organizational-unit"))
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_TEXT, "printer-organizational-unit", NULL, printer->org_unit ? printer->org_unit : "");
+
+//   if (!ra || cupsArrayFind(ra, "printer-resolution-default"))
+//     ippAddResolution(client->response, IPP_TAG_PRINTER, "printer-resolution-default", IPP_RES_PER_INCH, data->x_default, data->y_default);
+
+//   if (!ra || cupsArrayFind(ra, "printer-speed-default"))
+//     ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-speed-default", data->speed_default);
+
+//   if (!ra || cupsArrayFind(ra, "printer-state-change-date-time"))
+//     ippAddDate(client->response, IPP_TAG_PRINTER, "printer-state-change-date-time", ippTimeToDate(printer->state_time));
+
+//   if (!ra || cupsArrayFind(ra, "printer-state-change-time"))
+//     ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-state-change-time", (int)(printer->state_time - printer->start_time));
+
+//   if (!ra || cupsArrayFind(ra, "printer-strings-languages-supported"))
+//   {
+//     _pappl_resource_t	*r;		// Current resource
+//     cups_len_t		rcount;		// Number of resources
+
+// //    _papplRWLockRead(printer->system);
+
+//     // Cannot use cupsArrayGetFirst/Last since other threads might be iterating
+//     // this array...
+//     for (i = 0, num_values = 0, rcount = cupsArrayGetCount(printer->system->resources); i < rcount && num_values < (cups_len_t)(sizeof(svalues) / sizeof(svalues[0])); i ++)
+//     {
+//       r = (_pappl_resource_t *)cupsArrayGetElement(printer->system->resources, (size_t)i);
+
+//       if (r->language)
+//         svalues[num_values ++] = r->language;
+//     }
+// //    _papplRWUnlock(printer->system);
+
+//     if (num_values > 0)
+//       ippAddStrings(printer->attrs, IPP_TAG_PRINTER, IPP_TAG_LANGUAGE, "printer-strings-languages-supported", IPP_NUM_CAST num_values, NULL, svalues);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-strings-uri"))
+//   {
+//     const char	*lang = ippGetString(ippFindAttribute(client->request, "attributes-natural-language", IPP_TAG_LANGUAGE), 0, NULL);
+// 					// Language
+//     char	baselang[3],		// Base language
+// 		uri[1024];		// Strings file URI
+//     _pappl_resource_t	*r;		// Current resource
+//     cups_len_t	rcount;			// Number of resources
+
+//     papplCopyString(baselang, lang, sizeof(baselang));
+
+// //    _papplRWLockRead(printer->system);
+
+//     // Cannot use cupsArrayGetFirst/Last since other threads might be iterating
+//     // this array...
+//     for (i = 0, rcount = cupsArrayGetCount(printer->system->resources); i < rcount; i ++)
+//     {
+//       r = (_pappl_resource_t *)cupsArrayGetElement(printer->system->resources, i);
+
+//       if (r->language && (!strcmp(r->language, lang) || !strcmp(r->language, baselang)))
+//       {
+//         httpAssembleURI(HTTP_URI_CODING_ALL, uri, sizeof(uri), webscheme, NULL, client->host_field, client->host_port, r->path);
+//         ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-strings-uri", NULL, uri);
+//         break;
+//       }
+//     }
+
+// //    _papplRWUnlock(printer->system);
+//   }
+
+//   if (printer->num_supply > 0)
+//   {
+//     pappl_supply_t	 *supply = printer->supply;
+// 					// Supply values...
+
+//     if (!ra || cupsArrayFind(ra, "printer-supply"))
+//     {
+//       char		value[256];	// "printer-supply" value
+//       ipp_attribute_t	*attr = NULL;	// "printer-supply" attribute
+
+//       for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
+//       {
+// 	snprintf(value, sizeof(value), "index=%u;type=%s;maxcapacity=100;level=%d;colorantname=%s;", (unsigned)i, _papplSupplyTypeString(supply[i].type), supply[i].level, _papplSupplyColorString(supply[i].color));
+
+// 	if (attr)
+// 	  ippSetOctetString(client->response, &attr, ippGetCount(attr), value, IPP_NUM_CAST strlen(value));
+// 	else
+// 	  attr = ippAddOctetString(client->response, IPP_TAG_PRINTER, "printer-supply", value, IPP_NUM_CAST strlen(value));
+//       }
+//     }
+
+//     if (!ra || cupsArrayFind(ra, "printer-supply-description"))
+//     {
+//       for (i = 0; i < (cups_len_t)printer->num_supply; i ++)
+//         svalues[i] = supply[i].description;
+
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_TEXT, "printer-supply-description", IPP_NUM_CAST printer->num_supply, NULL, svalues);
+//     }
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-supply-info-uri"))
+//   {
+//     char	uri[1024];		// URI value
+
+//     httpAssembleURIf(HTTP_URI_CODING_ALL, uri, sizeof(uri), webscheme, NULL, client->host_field, client->host_port, "%s/supplies", printer->uriname);
+//     ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-supply-info-uri", NULL, uri);
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-up-time"))
+//     ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-up-time", (int)(time(NULL) - printer->start_time));
+
+//   if (!ra || cupsArrayFind(ra, "printer-uri-supported"))
+//   {
+//     char	uris[2][1024];		// Buffers for URIs
+//     const char	*values[2];		// Values for attribute
+
+//     num_values = 0;
+
+//     if (httpAddrIsLocalhost(httpGetAddress(client->http)) || !papplSystemGetTLSOnly(client->system))
+//     {
+//       httpAssembleURI(HTTP_URI_CODING_ALL, uris[num_values], sizeof(uris[0]), "ipp", NULL, client->host_field, client->host_port, printer->resource);
+//       values[num_values] = uris[num_values];
+//       num_values ++;
+//     }
+
+//     if (!httpAddrIsLocalhost(httpGetAddress(client->http)) && !(client->system->options & PAPPL_SOPTIONS_NO_TLS))
+//     {
+//       httpAssembleURI(HTTP_URI_CODING_ALL, uris[num_values], sizeof(uris[0]), "ipps", NULL, client->host_field, client->host_port, printer->resource);
+//       values[num_values] = uris[num_values];
+//       num_values ++;
+//     }
+
+//     if (num_values > 0)
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_TAG_URI, "printer-uri-supported", IPP_NUM_CAST num_values, NULL, values);
+//   }
+
+//   if (client->system->wifi_status_cb && httpAddrIsLocalhost(httpGetAddress(client->http)) && (!ra || cupsArrayFind(ra, "printer-wifi-ssid") || cupsArrayFind(ra, "printer-wifi-state")))
+//   {
+//     // Get Wi-Fi status...
+//     pappl_wifi_t	wifi;		// Wi-Fi status
+
+//     if ((client->system->wifi_status_cb)(client->system, client->system->wifi_cbdata, &wifi))
+//     {
+//       if (!ra || cupsArrayFind(ra, "printer-wifi-ssid"))
+//         ippAddString(client->response, IPP_TAG_PRINTER, IPP_TAG_NAME, "printer-wifi-ssid", NULL, wifi.ssid);
+
+//       if (!ra || cupsArrayFind(ra, "printer-wifi-state"))
+//         ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_ENUM, "printer-wifi-state", (int)wifi.state);
+//     }
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "printer-xri-supported"))
+//     _papplPrinterCopyXRINoLock(printer, client->response, client);
+
+//   if (!ra || cupsArrayFind(ra, "queued-job-count"))
+//     ippAddInteger(client->response, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "queued-job-count", (int)cupsArrayGetCount(printer->active_jobs));
+
+//   if (!ra || cupsArrayFind(ra, "sides-default"))
+//   {
+//     if (data->sides_default)
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "sides-default", NULL, _papplSidesString(data->sides_default));
+//     else
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "sides-default", NULL, "one-sided");
+//   }
+
+//   if (!ra || cupsArrayFind(ra, "uri-authentication-supported"))
+//   {
+//     // For each supported printer-uri value, report whether authentication is
+//     // supported.  Since we only support authentication over a secure (TLS)
+//     // channel, the value is always 'none' for the "ipp" URI and either 'none'
+//     // or 'basic' for the "ipps" URI...
+//     if (httpAddrIsLocalhost(httpGetAddress(client->http)) || (client->system->options & PAPPL_SOPTIONS_NO_TLS))
+//     {
+//       ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", NULL, "none");
+//     }
+//     else if (papplSystemGetTLSOnly(client->system))
+//     {
+//       if (papplSystemGetAuthService(client->system))
+//         ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", NULL, "basic");
+//       else
+//         ippAddString(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", NULL, "none");
+//     }
+//     else if (papplSystemGetAuthService(client->system))
+//     {
+//       static const char * const uri_authentication_basic[] =
+//       {					// uri-authentication-supported values
+// 	"none",
+// 	"basic"
+//       };
+
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", 2, NULL, uri_authentication_basic);
+//     }
+//     else
+//     {
+//       static const char * const uri_authentication_none[] =
+//       {					// uri-authentication-supported values
+// 	"none",
+// 	"none"
+//       };
+
+//       ippAddStrings(client->response, IPP_TAG_PRINTER, IPP_CONST_TAG(IPP_TAG_KEYWORD), "uri-authentication-supported", 2, NULL, uri_authentication_none);
+//     }
+//   }
 }
 
 
@@ -1727,13 +1729,13 @@ ipp_get_printer_attributes(
     for (attr = ippFirstAttribute(printer->attrs); attr; attr = ippNextAttribute(printer->attrs)) {
         const char *name = ippGetName(attr);
         int count = ippGetCount(attr);
-        ipp_tag_t value_tag = ippGetValueTag(attr);
+        ipp_tag_t value_tag = ippGetGroupTag(attr);
 
         printf("The value inside the driver_attrs are ---> %s\n", name);
         printf("the value of count associated with that is ---> %d\n" , count);
       
            for (int i = 0; i < count; i++) 
-        {
+          {
             if (value_tag == IPP_TAG_TEXT) {
                 const char *value = ippGetString(attr, i, NULL);
                 printf("  Value %d: %s\n", i, value);
@@ -1759,31 +1761,37 @@ ipp_get_printer_attributes(
               // here we print the enum values ...
               int value = ippGetInteger(attr , i);
               printf("  Value %d: %d\n", i , value);
-
+            }
+            // else if(value_tag == IPP_TAG_PRINTER)
+            // {
+            //   char * value = ippGetString(attr, i , NULL);
+            //   printf("  Value %d: %s\n", i, value);
+            // }
+            else if(value_tag == IPP_TAG_PRINTER)
+            {
               
-              // switch(value)
-              // {
-              //   case IPP_QUALITY_HIGH:
-              //     ippSetInteger(printer->attrs , &attr , i , 4);
-              //     break;
-                
-              //   case IPP_QUALITY_NORMAL:
-              //     ippSetInteger(printer->attrs , &attr , i , 4);
-              //     break;
+                ipp_t *coll = ippGetCollection(attr, 0);
+                if(coll)
+                {
+                  printf("it exist \n");
+                }
+                else 
+                {
+                  printf("it won't exist \n");
 
-              //   case IPP_QUALITY_DRAFT:
-              //     ippSetInteger(printer->attrs , &attr , i , 4);
-              //     break;
-              // }
-          }
-    }
-         
-
-        
-
-        
+                }
+                ipp_attribute_t *local_attr;
+                // now iterate over coll and print the value of name it contains ...
+                for (local_attr= ippFirstAttribute(coll); local_attr; local_attr = ippNextAttribute(coll))
+                {
+                  char *local_name = ippGetName(local_attr);
+                  char * value = ippGetString(local_attr, i , NULL);
+                  printf("the value of local_name is ---> %s\n", value);
 
 
+                }
+            }
+        }
     }
 
 

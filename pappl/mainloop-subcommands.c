@@ -1460,7 +1460,7 @@ _papplMainloopSubmitJob(
     cups_len_t    num_files,		// I - Number of files
     char          **files)		// I - Files
 {
-  printf("pappl submit job is called !\n");
+  printf("pappl submit job is called -----------------------******** ------------------!\n");
   const char	*document_format,	// Document format
 		*document_name,		// Document name
 		*filename,		// Current print filename
@@ -1491,14 +1491,20 @@ _papplMainloopSubmitJob(
   }
 #endif // !_WIN32
 
+
+
+
   if (num_files == 0)
   {
     _papplLocPrintf(stderr, _PAPPL_LOC("%s: No files to print."), base_name);
     return (1);
   }
 
+
+  // fetching the printer uri ...
   if ((printer_uri = cupsGetOption("printer-uri", num_options, options)) != NULL)
   {
+    printf("The printer uri exist \n");
     // Connect to the remote printer...
     if ((http = _papplMainloopConnectURI(base_name, printer_uri, resource, sizeof(resource))) == NULL)
       return (1);
@@ -1507,6 +1513,7 @@ _papplMainloopSubmitJob(
   }
   else
   {
+    // this below  get's executed at the end ...
     // Connect to/start up the server and get the destination printer...
     if ((http = _papplMainloopConnect(base_name, true)) == NULL)
       return (1);
@@ -1550,7 +1557,12 @@ _papplMainloopSubmitJob(
     }
 
     // Get supported attributes...
+
     supported = get_printer_attributes(http, printer_uri, printer_name, resource, 0, NULL);
+    //     printf("The value of printer_uri parameter is --> %s\n", printer_uri);
+    // printf("The value of printer_name parameter is --> %s\n", printer_name);
+    // printf("The value of resource parameter is --> %s\n", resource);
+    printf("The value of basename is ---> %s\n", base_name);
 
     // write the logic to print all the attributes...
      ipp_attribute_t *attr;
@@ -1560,7 +1572,7 @@ _papplMainloopSubmitJob(
         int count = ippGetCount(attr);
         ipp_tag_t value_tag = ippGetValueTag(attr);
 
-        printf("the number of attributes----%d\n", count);
+        // printf("the number of attributes----%d\n", count);
         printf("Attribute: %s\n", name);
 
         for (int i = 0; i < count; i++) {
@@ -1571,10 +1583,16 @@ _papplMainloopSubmitJob(
                 int value = ippGetInteger(attr, i);
                 printf("  Value %d: %d\n", i, value);
             }
+            else if(value_tag == IPP_TAG_KEYWORD)
+            {
+              const char *value = ippGetString(attr , i , NULL);
+                printf("  Value %d: %s\n", i, value);
+            }
             // Add support for other value types as needed
 
             // Note: You can use ippGetValueTagAsString(value_tag) to get a string representation of the value tag if desired
         }
+        printf("   \n");
     }
 
 
@@ -1950,7 +1968,10 @@ get_printer_attributes(
   char	temp[1024];			// Temporary string
 
 
+  // initialize the request ...
   request = ippNewRequest(IPP_OP_GET_PRINTER_ATTRIBUTES);
+
+  // adding printer_uri in the ipp request that we have created ...
   if (printer_uri)
   {
     ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, printer_uri);
@@ -1961,11 +1982,16 @@ get_printer_attributes(
     resource = temp;
   }
 
+  // adding user-name to the ipp request ...
   ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name", NULL, cupsGetUser());
 
+  // add requested-attributes ... ...
   if (num_requested > 0 && requested)
     ippAddStrings(request, IPP_TAG_OPERATION, IPP_TAG_KEYWORD, "requested-attributes", num_requested, NULL, requested);
 
+
+  printf("The value of yo resource is --> %s\n", resource);
+  printf("The value of the yo printer_uri --> %s\n", printer_uri );
   return (cupsDoRequest(http, request, resource));
 }
 

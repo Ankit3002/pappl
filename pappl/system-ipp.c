@@ -394,9 +394,14 @@ ipp_create_printers(
     types = PAPPL_DEVTYPE_ALL;
   }
 
+
+  // here below we haven't set the requested attribute value yet ...
+
   // List all devices
   data.client = client;
   data.ra     = NULL;
+
+  
 
   if (!papplSystemCreatePrinters(client->system, types, (pappl_pr_create_cb_t)printer_create_cb, &data))
     papplClientRespondIPP(client, IPP_STATUS_ERROR_NOT_FOUND, "No devices found.");
