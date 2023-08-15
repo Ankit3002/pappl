@@ -1724,75 +1724,7 @@ ipp_get_printer_attributes(
       // _papplRWLockWrite(printer);
 
     // write the logic to print all the attributes...
-     ipp_attribute_t *attr;
 
-    for (attr = ippFirstAttribute(printer->attrs); attr; attr = ippNextAttribute(printer->attrs)) {
-        const char *name = ippGetName(attr);
-        int count = ippGetCount(attr);
-        ipp_tag_t value_tag = ippGetGroupTag(attr);
-
-        printf("The value inside the driver_attrs are ---> %s\n", name);
-        printf("the value of count associated with that is ---> %d\n" , count);
-      
-           for (int i = 0; i < count; i++) 
-          {
-            if (value_tag == IPP_TAG_TEXT) {
-                const char *value = ippGetString(attr, i, NULL);
-                printf("  Value %d: %s\n", i, value);
-            } else if (value_tag == IPP_TAG_INTEGER) {
-                int value = ippGetInteger(attr, i);
-                printf("  Value %d: %d\n", i, value);
-            }
-            else if(value_tag == IPP_TAG_BOOLEAN)
-            {
-              bool value = ippGetBoolean(attr , i);
-              printf("  Value %d: %d\n", i , value);
-            }
-
-            else if(value_tag == IPP_TAG_STRING)
-            {
-
-              char *value = ippGetString(attr, i , NULL);
-                      printf("  Value %d: %s\n", i, value);
-            }
-
-            else if(value_tag == IPP_TAG_ENUM)
-            {
-              // here we print the enum values ...
-              int value = ippGetInteger(attr , i);
-              printf("  Value %d: %d\n", i , value);
-            }
-            // else if(value_tag == IPP_TAG_PRINTER)
-            // {
-            //   char * value = ippGetString(attr, i , NULL);
-            //   printf("  Value %d: %s\n", i, value);
-            // }
-            else if(value_tag == IPP_TAG_PRINTER)
-            {
-              
-                ipp_t *coll = ippGetCollection(attr, 0);
-                if(coll)
-                {
-                  printf("it exist \n");
-                }
-                else 
-                {
-                  printf("it won't exist \n");
-
-                }
-                ipp_attribute_t *local_attr;
-                // now iterate over coll and print the value of name it contains ...
-                for (local_attr= ippFirstAttribute(coll); local_attr; local_attr = ippNextAttribute(coll))
-                {
-                  char *local_name = ippGetName(local_attr);
-                  char * value = ippGetString(local_attr, i , NULL);
-                  printf("the value of local_name is ---> %s\n", value);
-
-
-                }
-            }
-        }
-    }
 
 
 
@@ -1837,7 +1769,100 @@ ipp_get_printer_attributes(
 // }
 
   
+       ipp_attribute_t *attr;
 
+    for (attr = ippFirstAttribute(client->response); attr; attr = ippNextAttribute(client->response)) {
+        const char *name = ippGetName(attr);
+        int count = ippGetCount(attr);
+        ipp_tag_t value_tag = ippGetGroupTag(attr);
+
+        // printf("The value inside the driver_attrs are ---> %s\n", name);
+        // printf("the value of count associated with that is ---> %d\n" , count);
+
+        if(value_tag == IPP_TAG_PRINTER)
+        {
+        printf("The value inside the driver_attrs are ---> %s\n", name);
+          
+          printf("the value of the count variable it contains ---> %d\n", count);
+          for(int x=0; x< count ; x++)
+          {
+            // since it's a collection .. 
+            ipp_t * collection = ippGetCollection(attr , 0);
+            // iterate over it and print the names it contains ...
+            ipp_attribute_t * local_attr;
+            for (local_attr= ippFirstAttribute(collection); local_attr; local_attr = ippNextAttribute(collection))
+            {
+              // why i have used 0 ... because there ---- > i only the name itself ....
+              char * local_name = ippGetString(local_attr , 0 ,NULL);
+              printf("The value of local name that you have fetched is ---> %s\n", local_name);
+
+            }
+
+          }
+
+
+        }
+      
+        //    for (int i = 0; i < count; i++) 
+        //   {
+        //     if (value_tag == IPP_TAG_TEXT) {
+        //         const char *value = ippGetString(attr, i, NULL);
+        //         printf("  Value %d: %s\n", i, value);
+        //     } else if (value_tag == IPP_TAG_INTEGER) {
+        //         int value = ippGetInteger(attr, i);
+        //         printf("  Value %d: %d\n", i, value);
+        //     }
+        //     else if(value_tag == IPP_TAG_BOOLEAN)
+        //     {
+        //       bool value = ippGetBoolean(attr , i);
+        //       printf("  Value %d: %d\n", i , value);
+        //     }
+
+        //     else if(value_tag == IPP_TAG_STRING)
+        //     {
+
+        //       char *value = ippGetString(attr, i , NULL);
+        //               printf("  Value %d: %s\n", i, value);
+        //     }
+
+        //     else if(value_tag == IPP_TAG_ENUM)
+        //     {
+        //       // here we print the enum values ...
+        //       int value = ippGetInteger(attr , i);
+        //       printf("  Value %d: %d\n", i , value);
+        //     }
+        //     // else if(value_tag == IPP_TAG_PRINTER)
+        //     // {
+        //     //   char * value = ippGetString(attr, i , NULL);
+        //     //   printf("  Value %d: %s\n", i, value);
+        //     // }
+        //     else if(value_tag == IPP_TAG_PRINTER)
+        //     {
+              
+        //         ipp_t *coll = ippGetCollection(attr, 0);
+        //         if(coll)
+        //         {
+        //           printf("it exist \n");
+        //         }
+        //         else 
+        //         {
+        //           printf("it won't exist \n");
+
+        //         }
+        //         ipp_attribute_t *local_attr;
+        //         printf("The number of presets ----------> %d\n", ippGetCount(local_attr));
+        //         // now iterate over coll and print the value of name it contains ...
+        //         for (local_attr= ippFirstAttribute(coll); local_attr; local_attr = ippNextAttribute(coll))
+        //         {
+        //           char *local_name = ippGetName(local_attr);
+        //           char * value = ippGetString(local_attr, i , NULL);
+        //           printf("the value of local_name is ---> %s\n", value);
+
+
+        //         }
+        //     }
+        // }
+    }
 
 
 

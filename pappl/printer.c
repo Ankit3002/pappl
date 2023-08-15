@@ -1197,15 +1197,33 @@ papplPrinterCreate(
   //     ippDelete(presetCollection);
   // }
 
-    // fetch the preset object ...
-    pappl_pr_preset_data_t * preset_here = cupsArrayGetElement(presets, 0);
-    // printf("The value of the name of the pre ---****************%s\n", preset_here->name);
-    // create ipp object to hold preset ...
-    ipp_t* preset_collection = ippNew();
-    // add values in that ipp preset object from struct preset object ...
-    ippAddString(preset_collection, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "name", NULL, preset_here->name);
+  /*
+   * Code to add presets to collection and printer-> attrs...
+  */
+
+    ipp_attribute_t * final_preset = ippAddCollections(printer->attrs , IPP_TAG_PRINTER , "job-presets-supported", 
+    cupsArrayCount(presets), NULL);
+        
+
+
+    for(int x=0; x < cupsArrayGetCount(presets); x++)
+    {
+
+        // fetch the preset object ...
+        pappl_pr_preset_data_t * preset_here = cupsArrayGetElement(presets, x);
+        ipp_t * col = ippNew();
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "name",
+              NULL, preset_here->name );
+
+        ippSetCollection(printer->attrs, &final_preset, x, col);
+        ippDelete(col);
+
+    }
+
+    // ippAddCollections(printer->attrs , IPP_TAG_PRINTER , "job-presets-supported", cupsArrayGetCount(presets) , all_presets);
     // add ipp one into the printer->attrs...
-    ippAddCollection(printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", preset_collection);
+    // ippAddCollection(printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", preset_collection);
+
     _papplRWUnlock(system);
     _papplSystemConfigChanged(system);
 
