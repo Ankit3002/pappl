@@ -1173,7 +1173,6 @@ papplPrinterCreate(
 
         // fetch the size of presets over here ...
   cups_array_t *presets = printer->presets;
-  const char * preset_sending[cupsArrayCount(presets)];
 
 
   /*
@@ -1181,48 +1180,93 @@ papplPrinterCreate(
    */
 
 
+  // printf("Hellow hellow \n");
+
       _papplRWLockWrite(system);
 
-
-  // for (cups_len_t x = 0; x < cupsArrayCount(presets); x++)
-  // {
-  //     pappl_pr_preset_data_t *preset_here = cupsArrayGetElement(presets, x);
-  //     // Add attributes from your struct to the collection
-  //     ipp_t* preset_collection = ippNew();
-  //     ippAddString(presetCollection, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "name", NULL, presetData.name);
-
-  //     ipp_attribute_t *collectionAttr = ippAddCollection(printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", presetCollection);
-
-  //     // Release the memory of the collection (it's duplicated in the attribute)
-  //     ippDelete(presetCollection);
-  // }
-
-  /*
-   * Code to add presets to collection and printer-> attrs...
-  */
-
     ipp_attribute_t * final_preset = ippAddCollections(printer->attrs , IPP_TAG_PRINTER , "job-presets-supported", 
-    cupsArrayCount(presets), NULL);
-        
+    cupsArrayGetCount(presets), NULL);
 
 
     for(int x=0; x < cupsArrayGetCount(presets); x++)
     {
 
-        // fetch the preset object ...
+        // fetch the pre set object ...
         pappl_pr_preset_data_t * preset_here = cupsArrayGetElement(presets, x);
         ipp_t * col = ippNew();
-        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "name",
+
+        /*
+         * Add static attributes to the ipp response ...
+        */
+
+        //  name is added over here ...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "preset_name",
               NULL, preset_here->name );
+        // here add the other values of the presets ...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-color-mode-default",
+              NULL, _papplColorModeString(preset_here->color_default) );
+        // print-content-optimize-default...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-content-optimize-default",
+              NULL, _papplContentString(preset_here->content_default));
+        // print-darkness property...
+        ippAddInteger(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-darkness-default", 
+          preset_here->darkness_default);
+        // print quality property ...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-quality-default",
+        NULL, ippEnumString("print-quality", (int)preset_here->quality_default));
+        // scaling property ...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-scaling-default",NULL,
+        _papplScalingString(preset_here->scaling_default));
+        // print-darkness configured property...
+        ippAddInteger(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-darkness-configured", preset_here->darkness_configured);
+        // sides-default property ...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "sides-default", NULL,
+        _papplSidesString(preset_here->sides_default));
+        // add resolution over here ...
+        ippAddResolution(col , IPP_TAG_PRINTER , "printer-resoltution-default", IPP_RES_PER_INCH, preset_here->x_default, preset_here->y_default);
+        // identify-actions-defualt over here ...
+        ippAddString(col , IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "identify-actions-default", NULL, 
+        _papplIdentifyActionsString(preset_here->identify_default));
+        // label-mode-configured over here ...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "label-mode-configured", NULL, 
+        _papplLabelModeString(preset_here->mode_configured));
+        // tear-offset configured over here ...
+        ippAddInteger(col , IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "label-tear-offset-configured", preset_here->tear_offset_configured);
+        // orientation default is over here ...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "orientation-requested-default", NULL, ippEnumString("orientation-requested", (int)preset_here->orient_default));
+        // outuput bin over here ...
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "output-bin-default", NULL, preset_here->bin[preset_here->bin_default]);
+
+
+        /*
+         * Logic to add vendor specific attributes ...
+         */
+         
+        printf("The value of num_vendor is ---> %d\n", preset_here->num_vendor);
+
+        cups_len_t num_vend = printer->driver_data.num_vendor;
+        printf("The number of num_vendor is ---> %d\n", num_vend);
+        // add the vendor specific attributes in the collection object that we have created ...
+        for(int v=0; v < num_vend ; v++)
+        {
+          // grab the vendor ... over here ...
+          char defname_preset[128], defvalue_preset[1024];
+          snprintf(defname_preset, sizeof(defname_preset), "%s-default", printer->driver_data.vendor[v]);
+          ippAttributeString(ippFindAttribute(preset_here->driver_attrs, defname_preset, IPP_TAG_ZERO), defvalue_preset, sizeof(defvalue_preset));
+
+          printf("vendor ---> %s   ---- value --> %s\n", defname_preset, defvalue_preset);
+          ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, defname_preset, NULL, defvalue_preset);
+
+        }
+
+
+
+
 
         ippSetCollection(printer->attrs, &final_preset, x, col);
         ippDelete(col);
 
     }
-
-    // ippAddCollections(printer->attrs , IPP_TAG_PRINTER , "job-presets-supported", cupsArrayGetCount(presets) , all_presets);
-    // add ipp one into the printer->attrs...
-    // ippAddCollection(printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", preset_collection);
 
     _papplRWUnlock(system);
     _papplSystemConfigChanged(system);

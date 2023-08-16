@@ -1781,9 +1781,9 @@ ipp_get_printer_attributes(
 
         if(value_tag == IPP_TAG_PRINTER)
         {
-        printf("The value inside the driver_attrs are ---> %s\n", name);
+        // printf("The value inside the driver_attrs are ---> %s\n", name);
           
-          printf("the value of the count variable it contains ---> %d\n", count);
+          // printf("the value of the count variable it contains ---> %d\n", count);
           for(int x=0; x< count ; x++)
           {
             // since it's a collection .. 
@@ -1794,7 +1794,7 @@ ipp_get_printer_attributes(
             {
               // why i have used 0 ... because there ---- > i only the name itself ....
               char * local_name = ippGetString(local_attr , 0 ,NULL);
-              printf("The value of local name that you have fetched is ---> %s\n", local_name);
+              // printf("The value of local name that you have fetched is ---> %s\n", local_name);
 
             }
 

@@ -182,20 +182,20 @@ papplSystemLoadState(
           else
             papplLog(system, PAPPL_LOGLEVEL_ERROR, "Dropping printer '%s' and its job history because an error occurred: %s", printer_name, strerror(errno));
       }
-      else
-      {
-        // here you have printer which contains name and id with it...
-        // do authentication properly over here ....
+      // else
+      // {
+      //   // here you have printer which contains name and id with it...
+      //   // do authentication properly over here ....
 
         
 
-        // here write the logic to fetch the printer preset from the file...
-        // printf("this means printer is created successfully with the given credentials \n");
+      //   // here write the logic to fetch the printer preset from the file...
+      //   // printf("this means printer is created successfully with the given credentials \n");
 
    
-        // papplPresetAdd(system, printer);
+      //   // papplPresetAdd(system, printer);
 
-      }
+      // }
 
 
     /// now start reading from the printer over .. here ...
@@ -515,7 +515,7 @@ papplSystemSavePreset(
       
       count = cupsArrayGetCount(printer->presets);
       pappl_pr_preset_data_t * preset;
-      for(i=0 ; i< count; i++)
+      for(i=0 ; i < count; i++)
       {
 
         cups_len_t num_options = 0;
@@ -534,9 +534,7 @@ papplSystemSavePreset(
 
         if (preset->identify_default)
         {
-          printf(" #######################3Just Checking whether preset have data or not \n");
                 cupsFilePutConf(fp, "identify-actions-default", _papplIdentifyActionsString(preset->identify_default));
-
         }
 
     if (preset->mode_configured)
