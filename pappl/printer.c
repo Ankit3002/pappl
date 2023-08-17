@@ -1212,15 +1212,15 @@ papplPrinterCreate(
         ippAddInteger(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-darkness-default", 
           preset_here->darkness_default);
         // print quality property ...
-        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-quality-default",
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-quality-default",
         NULL, ippEnumString("print-quality", (int)preset_here->quality_default));
         // scaling property ...
-        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-scaling-default",NULL,
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-scaling-default",NULL,
         _papplScalingString(preset_here->scaling_default));
         // print-darkness configured property...
         ippAddInteger(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-darkness-configured", preset_here->darkness_configured);
         // sides-default property ...
-        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "sides-default", NULL,
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "sides-default", NULL,
         _papplSidesString(preset_here->sides_default));
         // add resolution over here ...
         ippAddResolution(col , IPP_TAG_PRINTER , "printer-resoltution-default", IPP_RES_PER_INCH, preset_here->x_default, preset_here->y_default);
@@ -1231,7 +1231,7 @@ papplPrinterCreate(
         ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "label-mode-configured", NULL, 
         _papplLabelModeString(preset_here->mode_configured));
         // tear-offset configured over here ...
-        ippAddInteger(col , IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "label-tear-offset-configured", preset_here->tear_offset_configured);
+        ippAddInteger(col , IPP_TAG_PRINTER, IPP_TAG_INTEGER, "label-tear-offset-configured", preset_here->tear_offset_configured);
         // orientation default is over here ...
         ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "orientation-requested-default", NULL, ippEnumString("orientation-requested", (int)preset_here->orient_default));
         // outuput bin over here ...
