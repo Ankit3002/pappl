@@ -244,7 +244,7 @@ papplPrinterSetPresetFromDriver(
   preset->darkness_configured    = data->darkness_configured;
   preset->identify_default       = data->identify_default;
 
-  // Copy any vendor-specific xxx-default values...
+  // Copy any vendor-specific xxx-default values... vendor data is copies into the preset ... over here ... how --> simple because that is ipp_t object data ...
   for (i = 0; i < data->num_vendor; i ++)
   {
     if ((value = cupsGetOption(data->vendor[i], (int)num_vendor, vendor)) == NULL)

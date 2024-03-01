@@ -224,7 +224,7 @@ _papplPrinterPreset(
   pappl_printer_t *printer
 )
 {
-
+  // take out job-preset-supported from printer->attrs over here...
   papplClientHTMLPrinterHeader(client , printer , "Presets", 0 , NULL, NULL);
   int i, count;
   char *uri = printer->uriname;
@@ -248,6 +248,9 @@ _papplPrinterPreset(
     snprintf(edit_button, sizeof(edit_button), "%s/presets/%s/edit", uri, preset->name);
     snprintf(copy_button, sizeof(copy_button), "%s/presets/%s/copy", uri, preset->name);
     snprintf(delete_button, sizeof(delete_button), "%s/presets/%s/delete", uri, preset->name);
+
+    // resources are already created over here...
+    // create a standard route ... 
 
     // add the buttons over here ...
     papplClientHTMLPrintf(client , "<tr><td> %s </td><td>   <button id=\"edit_button\" onClick=\"window.location.href = '%s';\">Edit</button>    </td> <td> <button id=\"copy_button\" onClick=\"window.location.href = '%s';\">Copy</button>  </td> <td>  <button id=\"delete_button\" onClick=\"window.location.href = '%s';\">Delete</button>  </td> </tr>" , preset->name , edit_button, copy_button, delete_button);
@@ -432,6 +435,13 @@ void _papplPrinterPresetCopy(
     {
 
       // create local variables ...
+
+      // write the code over here to save presets in ipp_t object ...
+
+
+
+
+
 
       pappl_pr_preset_data_t *preset = calloc(1 , sizeof(pappl_pr_preset_data_t));
 
@@ -1231,6 +1241,9 @@ void _papplPrinterPresetCreate(
       int count ;
       pappl_pr_preset_data_t *preset = calloc(1 , sizeof(pappl_pr_preset_data_t));
       preset->driver_attrs = ippNew();
+      ipp_t * col = ippNew();
+
+      // define the preset collection over here itself...
 
       count = cupsArrayGetCount(printer->presets);
       preset->preset_id = count + 1;
@@ -1239,8 +1252,14 @@ void _papplPrinterPresetCreate(
       if((value = cupsGetOption("preset_name", num_form , form)) != NULL)
       {
         preset->name = strdup(value);
+
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "preset_name",
+                       NULL, strdup(value));
+
         int preset_iterator , preset_count;
         int flag = 0;
+
+        // below we are checking whether with same name another preset exist or not....
         preset_count = cupsArrayGetCount(printer->presets);
         pappl_pr_preset_data_t * iterator_preset;
         for(preset_iterator = 0;preset_iterator < preset_count; preset_iterator++)
@@ -1260,18 +1279,129 @@ void _papplPrinterPresetCreate(
           }
           else
           {
+
+            // write the code to save the preset as IPP_T object.....
+            
+            // create a pointer of ipp_t object to store multiple presets in that ....
+            ipp_t * preset_collection;
+
+
+
+
+            // below one is copied ....
+
+              // fetch the pre set object ...
+//              pappl_pr_preset_data_t * preset_here = cupsArrayGetElement(presets, x);
+//
+//
+//              /*
+//               * Add static attributes to the ipp response ...
+//              */
+//
+//              //  name is added over here ...
+////              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "preset_name",
+////                           NULL, preset_here->name );
+//              // here add the other values of the presets ...
+//              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-color-mode-default",
+//                           NULL, _papplColorModeString(preset_here->color_default) );
+//              // print-content-optimize-default...
+//              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-content-optimize-default",
+//                           NULL, _papplContentString(preset_here->content_default));
+//              // print-darkness property...
+//              ippAddInteger(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-darkness-default",
+//                            preset_here->darkness_default);
+//              // print quality property ...
+//              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-quality-default",
+//                           NULL, ippEnumString("print-quality", (int)preset_here->quality_default));
+//              // scaling property ...
+//              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "print-scaling-default",NULL,
+//                           _papplScalingString(preset_here->scaling_default));
+//              // print-darkness configured property...
+//              ippAddInteger(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-darkness-configured", preset_here->darkness_configured);
+//              // sides-default property ...
+//              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "sides-default", NULL,
+//                           _papplSidesString(preset_here->sides_default));
+//              // add resolution over here ...
+//              ippAddResolution(col , IPP_TAG_PRINTER , "printer-resoltution-default", IPP_RES_PER_INCH, preset_here->x_default, preset_here->y_default);
+//              // identify-actions-defualt over here ...
+//              ippAddString(col , IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "identify-actions-default", NULL,
+//                           _papplIdentifyActionsString(preset_here->identify_default));
+//              // label-mode-configured over here ...
+//              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "label-mode-configured", NULL,
+//                           _papplLabelModeString(preset_here->mode_configured));
+//              // tear-offset configured over here ...
+//              ippAddInteger(col , IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "label-tear-offset-configured", preset_here->tear_offset_configured);
+//              // orientation default is over here ...
+//              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "orientation-requested-default", NULL, ippEnumString("orientation-requested", (int)preset_here->orient_default));
+//              // outuput bin over here ...
+//              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "output-bin-default", NULL, preset_here->bin[preset_here->bin_default]);
+//
+//
+//              /*
+//               * Logic to add vendor specific attributes ...
+//               */
+//
+//              printf("The value of num_vendor is ---> %d\n", preset_here->num_vendor);
+//
+//              cups_len_t num_vend = printer->driver_data.num_vendor;
+//              printf("The number of num_vendor is ---> %d\n", num_vend);
+//              // add the vendor specific attributes in the collection object that we have created ...
+//              for(int v=0; v < num_vend ; v++)
+//              {
+//                  // grab the vendor ... over here ...
+//                  char defname_preset[128], defvalue_preset[1024];
+//                  snprintf(defname_preset, sizeof(defname_preset), "%s-default", printer->driver_data.vendor[v]);
+//                  ippAttributeString(ippFindAttribute(preset_here->driver_attrs, defname_preset, IPP_TAG_ZERO), defvalue_preset, sizeof(defvalue_preset));
+//
+//                  printf("vendor ---> %s   ---- value --> %s\n", defname_preset, defvalue_preset);
+//                  ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, defname_preset, NULL, defvalue_preset);
+//
+//              }
+//
+//
+//
+//
+//
+//              ippSetCollection(printer->attrs, &final_preset, x, col);
+//              ippDelete(col);
+
+
+
+
+
+            // overe here it's finished ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             // write other code over here ...
             if ((value = cupsGetOption("orientation-requested", num_form, form)) != NULL)
             {
               preset->orient_default_check = true;
               data.orient_default = (ipp_orient_t)strtol(value, &end, 10);
+                ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "orientation-requested-default", NULL,ippEnumString("orientation-requested", (int)(ipp_orient_t)strtol(value, &end, 10)) );
 
               if (errno == ERANGE || *end || data.orient_default < IPP_ORIENT_PORTRAIT || data.orient_default > IPP_ORIENT_NONE)
                 data.orient_default = IPP_ORIENT_PORTRAIT;
             }
 
-            if ((value = cupsGetOption("output-bin", num_form, form)) != NULL)
+
+                  if ((value = cupsGetOption("output-bin", num_form, form)) != NULL)
             {
+                ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "output-bin-default", NULL, value );
               preset->bin_default_check = true;
               for (i = 0; i < data.num_bin; i ++)
               {
@@ -1285,6 +1415,8 @@ void _papplPrinterPresetCreate(
 
             if ((value = cupsGetOption("print-color-mode", num_form, form)) != NULL)
             {
+                // ippAddString(col, IPP_TAG_PRINTER,IPP_TAG_KEYWORD, "print-color-mode-default", NULL,
+                            //  _papplColorModeString(_papplColorModeValue(value)));
               preset->color_default_check = true;
               data.color_default = _papplColorModeValue(value);
             }
@@ -1292,6 +1424,8 @@ void _papplPrinterPresetCreate(
 
             if ((value = cupsGetOption("print-content-optimize", num_form, form)) != NULL)
             {
+                ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-content-optimize-default",NULL,
+                             _papplContentString(_papplContentValue(value)));
               preset->content_default_check = true;
               data.content_default = _papplContentValue(value);
             }
@@ -1299,6 +1433,7 @@ void _papplPrinterPresetCreate(
 
             if ((value = cupsGetOption("print-darkness", num_form, form)) != NULL)
             {
+              // ippAddInteger(col,IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-darkness-configured", (int)strtol(value, &end, 10));
               preset->darkness_configured_check = true;
               data.darkness_configured = (int)strtol(value, &end, 10);
 
@@ -1308,12 +1443,14 @@ void _papplPrinterPresetCreate(
 
             if ((value = cupsGetOption("print-quality", num_form, form)) != NULL)
             {
+              // ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-quality-default", NULL, ippEnumString("print-quality", (int)(ipp_quality_t)ippEnumValue("print-quality", value)));
               preset->quality_defualt_check = true;
               data.quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
             }
 
             if ((value = cupsGetOption("print-scaling", num_form, form)) != NULL)
             {
+              // ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-scaling-default",NULL, _papplScalingString(_papplScalingValue(value)));
               preset->scaling_default_check = true;
               data.scaling_default = _papplScalingValue(value);
             }
@@ -1321,6 +1458,7 @@ void _papplPrinterPresetCreate(
 
             if ((value = cupsGetOption("print-speed", num_form, form)) != NULL)
             {
+              // ippAddInteger(col,IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-speed-default", (int)strtol(value, &end, 10) * 2540);
               preset->speed_defualt_check = true;
               data.speed_default = (int)strtol(value, &end, 10) * 2540;
 
@@ -1330,6 +1468,7 @@ void _papplPrinterPresetCreate(
 
             if ((value = cupsGetOption("sides", num_form, form)) != NULL)
             {
+              // ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "sides-default", NULL, _papplSidesString(_papplSidesValue(value)));
               preset->sides_default_check = true;
               data.sides_default = _papplSidesValue(value);
             }
@@ -1337,6 +1476,14 @@ void _papplPrinterPresetCreate(
 
             if ((value = cupsGetOption("printer-resolution", num_form, form)) != NULL)
             {
+              // int x_default;
+              // int y_default;
+              // if(sscanf(value, "%dx%ddpi", &x_default, &y_default) == 1)
+              //   y_default = x_default;
+              
+
+              // ippAddResolution(col, IPP_TAG_PRINTER, "printer-resolution-default", (ipp_res_t)0,x_default, y_default );
+
               preset->x_default_check = true;
               preset->y_default_check = true;
               if (sscanf(value, "%dx%ddpi", &data.x_default, &data.y_default) == 1)
@@ -1344,7 +1491,7 @@ void _papplPrinterPresetCreate(
             }
 
             if ((value = cupsGetOption("media-source", num_form, form)) != NULL)
-            {
+            { // media ready is left .. finish this is as well...
               preset->media_default_check = true;
               for (i = 0; i < data.num_source; i ++)
         {
@@ -1373,13 +1520,78 @@ void _papplPrinterPresetCreate(
             }
             if ((value = cupsGetOption(data.vendor[i], num_form, form)) != NULL)
             {
+              // now you have the value in the form which is there in the vendor option exist in the driver attrs...
               num_vendor = (int)cupsAddOption(data.vendor[i], value, (int)num_vendor, &vendor);
               preset->is_vendor[i] = true;
+              // ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD,data.vendor[i], NULL, value );
             }
       else if (ippFindAttribute(printer->driver_attrs, supattr, IPP_TAG_BOOLEAN))
+      {
         num_vendor = (int)cupsAddOption(data.vendor[i], "false", (int)num_vendor, &vendor);
+        // ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, data.vendor[i], NULL,"false" );
+      }
           }
         printer->config_time = time(NULL);
+
+
+
+          // print all the attributes of col ipp_t object...
+              // convert the above into ipp_attribute_t object then set these to the ipp_t object...
+              // try to traverse the printer col over here to see whether it contains what we craeated or not...
+              // write the logic to print all the attributes...
+              // ipp_attribute_t *attr;
+
+              // for (attr = ippGetFirstAttribute(col); attr; attr = ippGetNextAttribute(col) ){
+
+              //     const char *name = ippGetName(attr);
+              //     int count = ippGetCount(attr);
+              //     ipp_tag_t value_tag = ippGetValueTag(attr);
+
+              //     printf("Yaar read krliya finally --name hai ab---> %s\n", name);
+              //     printf("the value of count associated with that is ---> %d\n", count);
+
+              //     for (int i = 0; i < count; i++) {
+              //         if (value_tag == IPP_TAG_TEXT) {
+              //             const char *value = ippGetString(attr, i, NULL);
+              //             printf("  Value %d: %s\n", i, value);
+              //         } else if (value_tag == IPP_TAG_INTEGER) {
+              //             int value = ippGetInteger(attr, i);
+              //             printf("  Value %d: %d\n", i, value);
+              //         } else if (value_tag == IPP_TAG_BOOLEAN) {
+              //             bool value = ippGetBoolean(attr, i);
+              //             printf("  Value %d: %d\n", i, value);
+              //         } else if (value_tag == IPP_TAG_STRING) {
+
+              //             char *value = ippGetString(attr, i, NULL);
+              //             printf("  Value %d: %s\n", i, value);
+              //         } else if (value_tag == IPP_TAG_ENUM) {
+              //             // here we print the enum values ...
+              //             int value = ippGetInteger(attr, i);
+              //             printf("  Value %d: %d\n", i, value);
+
+
+              //             // switch(value)
+              //             // {
+              //             //   case IPP_QUALITY_HIGH:
+              //             //     ippSetInteger(printer->attrs , &attr , i , 4);
+              //             //     break;
+
+              //             //   case IPP_QUALITY_NORMAL:
+              //             //     ippSetInteger(printer->attrs , &attr , i , 4);
+              //             //     break;
+
+              //             //   case IPP_QUALITY_DRAFT:
+              //             //     ippSetInteger(printer->attrs , &attr , i , 4);
+              //             //     break;
+              //             // }
+              //         }
+              //         else if(value_tag == IPP_TAG_KEYWORD)
+              //         {
+              //             const char *value = ippGetString(attr, i, NULL);
+              //             printf("  Value %d: %s\n", i, value);
+              //         }
+              //     }
+              // }
 
         _papplRWUnlock(printer);
 
@@ -1781,6 +1993,14 @@ void _papplPrinterPresetEdit(
     resource_data_t *resource_data
     )		
 {
+
+  // try to print the form data over here ...
+  cups_option_t * check_form = NULL;
+  int check_form_num = (cups_len_t)papplClientGetForm(client, &check_form);
+  // print the data of the form over here...
+
+
+
 
   int			i, j;		// Looping vars
   pappl_pr_driver_data_t data;		// Driver data

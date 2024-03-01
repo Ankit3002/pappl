@@ -567,6 +567,8 @@ papplPrinterCreate(
   // Add the printer to the system...
   _papplSystemAddPrinter(system, printer, printer_id);
 
+  // papplPresetAdd(system, printer);
+
   // printer-id
   _papplRWLockWrite(printer);
   ippAddInteger(printer->attrs, IPP_TAG_PRINTER, IPP_TAG_INTEGER, "printer-id", printer->printer_id);
@@ -676,6 +678,11 @@ papplPrinterCreate(
        papplSystemAddResourceCallback(system, path, "text/html", (pappl_resource_cb_t)_papplPrinterPresetDelete, resource_data);
 
     }
+
+
+    // write new logic over here ... 
+    // 1. a single resource that manages all the preset....
+
 
   _papplSystemConfigChanged(system);
 
