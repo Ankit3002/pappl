@@ -276,11 +276,14 @@ _papplPrinterPresetDelete(
   char *uri = printer->uriname;
   char *preset_name = resource_data->preset_name;
   char buffer[1024];
+  char *name_preset;
+            cups_option_t *check_form = NULL;
   if (!papplClientHTMLAuthorize(client))
     return;
 
   if (client->operation == HTTP_STATE_POST)
   {
+                cups_option_t *check_form = NULL;
     int		num_form = 0;	// Number of form variables
     cups_option_t	*form = NULL;	// Form variables
 
@@ -306,6 +309,51 @@ _papplPrinterPresetDelete(
         // here call the method to delete the preset from the memory ...
         // traverse the preset that you wanted to delete ...
         // papplPresetDelete();
+
+                // int  len = (cups_len_t)papplClientGetForm(client, &check_form);
+        name_preset = cupsGetOption("preset_name", num_form, form);
+        printf("The nam have is--> %s\n", name_preset);
+        ipp_attribute_t * presets;
+        for(presets = ippGetFirstAttribute(resource_data->printer->attrs); presets; presets = ippGetNextAttribute(resource_data->printer->attrs))
+          if(!strcasecmp(ippGetName(presets), "job-presets-supported"))
+            break;
+        
+
+        int i =0;
+        int preset_counter = ippGetCount(presets);
+        ipp_t ** preset_array = malloc((preset_counter-1)* sizeof(ipp_t*));
+        for(int iter = 0;iter< preset_counter; iter++)
+        {
+          ipp_t * curr = ippGetCollection(presets, iter);
+          ipp_attribute_t * traverse;
+          bool flag = false;
+          for(traverse = ippGetFirstAttribute(curr); presets; presets = ippGetNextAttribute(curr))
+            if(!strcasecmp(ippGetName(traverse), "preset_name"))
+            {
+              char * value = ippGetString(traverse, 0, NULL);
+              printf("The value ---> %s\n", value);
+              if(!strcasecmp(value, name_preset))
+              {
+                printf("Uou goti \n");
+                flag = true;
+                break;
+              }
+              
+            }
+          if(flag == false)
+          {
+            preset_array[i] = curr;
+            i++;
+          }
+        }
+
+        _papplRWLockWrite(resource_data->printer);
+        ippDeleteAttribute(printer->attrs, presets);
+        ippAddCollections(printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", preset_counter-1, preset_array);
+        _papplRWUnlock(resource_data->printer);
+        _papplSystemConfigChanged(printer->system);
+
+
           int preset_iterator , preset_count;
           preset_count = cupsArrayGetCount(printer->presets);
           pappl_pr_preset_data_t * iterator_preset;
@@ -329,15 +377,40 @@ _papplPrinterPresetDelete(
     cupsFreeOptions(num_form, form);
   }
 
+        int  len = (cups_len_t)papplClientGetForm(client, &check_form);
+        name_preset = cupsGetOption("name", len, check_form);
+        printf("The name of the preset in the delete api that you have is--> %s\n", name_preset);
+
+
   papplClientHTMLPrinterHeader(client, printer, _PAPPL_LOC("Delete Preset"), 0, NULL, NULL);
 
   if (status)
     papplClientHTMLPrintf(client, "          <div class=\"banner\">%s</div>\n", papplClientGetLocString(client, status));
 
   papplClientHTMLStartForm(client, client->uri, false);
+    // add old preset-name
+  papplClientHTMLPrintf(client, " <input type=\"hidden\" name=\"preset_name\" value=%s> ",name_preset);
+
   papplClientHTMLPrintf(client,"          <input type=\"submit\" value=\"%s\"></form>", papplClientGetLocString(client, _PAPPL_LOC("Confirm Delete Preset")));
 
+
   papplClientHTMLFooter(client);
+}
+
+// function which adds the preset into the already array and return preset array ...
+ipp_t ** CreateNewPreset(ipp_attribute_t * presets, ipp_t *new_preset)
+{
+  //logic ...
+  ipp_attribute_t * iterator;
+  int preset_count = ippGetCount(presets);
+
+  ipp_t ** preset_array = malloc((preset_count+1) * sizeof(ipp_t*));
+  for(int iter = 0; iter<preset_count; iter++)
+  {
+    preset_array[iter] = ippGetCollection(presets, iter);
+  }
+  preset_array[preset_count] = new_preset;
+  return preset_array;
 }
 
 
@@ -352,7 +425,11 @@ void _papplPrinterPresetCopy(
 
 
   int			i, j;		// Looping vars
-
+        cups_option_t * check_form = NULL;
+        ipp_attribute_t * presets;
+        int len;
+        int preset_counter;
+        char *oht;
 
   pappl_pr_driver_data_t data;		// Driver data
 
@@ -437,15 +514,6 @@ void _papplPrinterPresetCopy(
     else
     {
 
-      // create local variables ...
-
-      // write the code over here to save presets in ipp_t object ...
-
-
-
-
-
-
       pappl_pr_preset_data_t *preset = calloc(1 , sizeof(pappl_pr_preset_data_t));
 
       preset->driver_attrs = ippNew();
@@ -453,6 +521,7 @@ void _papplPrinterPresetCopy(
       const char	*value;		// Value of form variable
       char		*end;			// End of value
 
+      ipp_t * col = ippNew();
 
       preset->preset_id = preset_count + 1;
 
@@ -461,12 +530,9 @@ void _papplPrinterPresetCopy(
       if((value = cupsGetOption("preset_name", num_form , form)) != NULL)
       {
         preset->name = strdup(value);
+        ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "preset_name", NULL, strdup(value));
 
-        // preset->name = strdup(value);
-        // int preset_iterator , preset_count;
         int flag = 0;
-        // preset_count = cupsArrayGetCount(printer->presets);
-        // pappl_pr_preset_data_t * iterator_preset;
         for(preset_iterator = 0;preset_iterator < preset_count; preset_iterator++)
         {
           iterator_preset = cupsArrayGetElement(printer->presets, preset_iterator);
@@ -486,6 +552,8 @@ void _papplPrinterPresetCopy(
           {
             if ((value = cupsGetOption("orientation-requested", num_form, form)) != NULL)
             {
+                ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "orientation-requested-default", NULL,ippEnumString("orientation-requested", (int)(ipp_orient_t)strtol(value, &end, 10)) );
+
               preset->orient_default_check = true;
               preset->orient_default = (ipp_orient_t)strtol(value, &end, 10);
 
@@ -495,6 +563,8 @@ void _papplPrinterPresetCopy(
 
             if ((value = cupsGetOption("output-bin", num_form, form)) != NULL)
             {
+                ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "output-bin-default", NULL, value );
+
               preset->bin_default_check = true;
               for (i = 0; i < preset->num_bin; i ++)
               {
@@ -508,18 +578,24 @@ void _papplPrinterPresetCopy(
 
             if ((value = cupsGetOption("print-color-mode", num_form, form)) != NULL)
             {
+                                      ippAddString(col, IPP_TAG_PRINTER,IPP_TAG_KEYWORD, "print-color-mode-default", NULL,
+                             _papplColorModeString(_papplColorModeValue(value)));
               preset->color_default_check = true;
               preset->color_default = _papplColorModeValue(value);
             }
 
             if ((value = cupsGetOption("print-content-optimize", num_form, form)) != NULL)
             {
+                                      ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-content-optimize-default",NULL,
+                             _papplContentString(_papplContentValue(value)));
               preset->content_default_check = true;
               preset->content_default = _papplContentValue(value);
             }
 
             if ((value = cupsGetOption("print-darkness", num_form, form)) != NULL)
             {
+                            ippAddInteger(col,IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-darkness-configured", (int)strtol(value, &end, 10));
+
               preset->darkness_configured_check = true;
               preset->darkness_configured = (int)strtol(value, &end, 10);
 
@@ -529,6 +605,8 @@ void _papplPrinterPresetCopy(
 
             if ((value = cupsGetOption("print-quality", num_form, form)) != NULL)
             {
+                            ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-quality-default", NULL, ippEnumString("print-quality", (int)(ipp_quality_t)ippEnumValue("print-quality", value)));
+
               preset->quality_defualt_check =true;
               preset->quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
 
@@ -536,6 +614,8 @@ void _papplPrinterPresetCopy(
 
             if ((value = cupsGetOption("print-scaling", num_form, form)) != NULL)
             {
+                            ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-scaling-default",NULL, _papplScalingString(_papplScalingValue(value)));
+
               preset->scaling_default_check = true;
               preset->scaling_default = _papplScalingValue(value);
 
@@ -543,6 +623,8 @@ void _papplPrinterPresetCopy(
 
             if ((value = cupsGetOption("print-speed", num_form, form)) != NULL)
             {
+                            ippAddInteger(col,IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-speed-default", (int)strtol(value, &end, 10) * 2540);
+
               preset->speed_defualt_check = true;
               preset->speed_default = (int)strtol(value, &end, 10) * 2540;
 
@@ -552,6 +634,8 @@ void _papplPrinterPresetCopy(
 
             if ((value = cupsGetOption("sides", num_form, form)) != NULL)
             {
+                            ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "sides-default", NULL, _papplSidesString(_papplSidesValue(value)));
+
               preset->sides_default_check = true;
               preset->sides_default = _papplSidesValue(value);
 
@@ -559,6 +643,14 @@ void _papplPrinterPresetCopy(
 
             if ((value = cupsGetOption("printer-resolution", num_form, form)) != NULL)
             {
+                                    int x_default;
+              int y_default;
+              if(sscanf(value, "%dx%ddpi", &x_default, &y_default) == 1)
+                y_default = x_default;
+              
+
+              ippAddResolution(col, IPP_TAG_PRINTER, "printer-resolution-default", (ipp_res_t)0,x_default, y_default );
+
               preset->x_default_check = true;
               preset->y_default_check = true;
               if (sscanf(value, "%dx%ddpi", &preset->x_default, &preset->y_default) == 1)
@@ -595,17 +687,37 @@ void _papplPrinterPresetCopy(
                 preset->is_vendor[i] = true;
                 printf("The if value that get changed in form is ---- %s --- %s\n", value , data.vendor[i]);
                 num_vendor = (int)cupsAddOption(data.vendor[i], value, (int)num_vendor, &vendor);
+              ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD,data.vendor[i], NULL, value );
 
               }
 
 
               else if (ippFindAttribute(printer->driver_attrs, supattr, IPP_TAG_BOOLEAN))
               {
+                            ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, data.vendor[i], NULL,"false" );
+
                 printf("The else value that get changed in form is ---- %s --- %s\n", value , data.vendor[i]);
                 num_vendor = (int)cupsAddOption(data.vendor[i], "false", (int)num_vendor, &vendor);
               }
                 
             }
+
+            // you have col data as new ipp_t object ...
+            // take out the array and delete the already created presets from printer->attrs...
+            // add the new presets into the printer->attrs...
+          for(presets = ippGetFirstAttribute(resource_data->printer->attrs); presets; presets = ippGetNextAttribute(resource_data->printer->attrs))
+            if(!strcasecmp(ippGetName(presets), "job-presets-supported"))
+              break;
+
+          preset_counter = ippGetCount(presets);
+          ipp_t **preset_array = CreateNewPreset(presets, col);
+                _papplRWLockWrite(resource_data->printer);
+        ippDeleteAttribute(printer->attrs, presets);
+
+        ippAddCollections(resource_data->printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", preset_counter+1, preset_array);
+
+        _papplRWUnlock(resource_data->printer);
+        _papplSystemConfigChanged(printer->system);
 
             papplPrinterSetPresetsVendor(printer, preset, num_vendor, vendor);
 
@@ -1976,16 +2088,6 @@ ipp_t** funct(ipp_attribute_t* presets, ipp_t *new_preset, const char *preset_na
       preset_array[iter] = curr_preset;
     }
   }
-
-        //   for(int xs = 0;xs< preset_count; xs++)
-        // {
-        //   // now grab a preset ...
-        //   ipp_t * ssPR = preset_array[xs];
-        //   ipp_attribute_t * again = ippGetFirstAttribute(ssPR);
-        //   printf("calling from function with name ---- > %s and value --> %s\n", ippGetName(again), ippGetString(again, 0, NULL));
-        // }
-
-
   return preset_array;
 }
 
@@ -2086,19 +2188,6 @@ void _papplPrinterPresetEdit(
     else
     {
 
-      // char something[1024];
-
-      // char buf_me[8096];
-      // // memset(iterator_preset->is_vendor, false , sizeof(iterator_preset->is_vendor));
-      // for (size_t i = 0; i < num_form; i++) {
-      //   strcat(buf_me, form[i].name);
-      //   strcat(buf_me, "----");
-      //   strcat(buf_me, form[i].value);
-      //   strcat(buf_me, "\n");
-      //   printf("Option Name in the web default page  : %s\n", form[i].name);
-      //   printf("Option Value in the web defualt page : %s\n", form[i].value);
-      //   printf("\n");
-      // }
 
       const char	*value;		// Value of form variable
       char		*end;			// End of value
@@ -2291,29 +2380,6 @@ void _papplPrinterPresetEdit(
         ippDeleteAttribute(printer->attrs, presets);
         int zi = sizeof(preset_arrayp);
         printf("THe size of presets that we recieve --> %d\n ", preset_counter);
-
-        // check whether presets in the array are updated properly ...
-
-        // ipp_t *current_element = preset_arrayp; // Point to the beginning of the array
-
-// Traverse the array until reaching the end
-
-         
-        // for(int xs = 0;xs< preset_counter; xs++)
-        // {printf("Rhe \n");
-        //   // now grab a preset ...
-        //   ipp_t * ssPR = preset_arrayp[0];
-        //   printf("Rhe \n");
-
-        //   ipp_attribute_t * again = ippGetFirstAttribute(ssPR);
-        //   printf("Rhe \n");
-
-        //   printf("THE ankit i---- > %s\n", ippGetName(again));
-        //   printf("Rhe \n");
-        // }
-
-
-
 
 
         ippAddCollections(resource_data->printer->attrs, IPP_TAG_PRINTER, "job-presets-supported", preset_counter, preset_arrayp);
