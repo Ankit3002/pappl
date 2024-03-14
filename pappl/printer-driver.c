@@ -225,7 +225,7 @@ papplPrinterSetPresetFromDriver(
   ipp_attribute_t	*supported;	// xxx-supported attribute
 
 
-  _papplRWLockWrite(printer);
+  // _papplRWLockWrite(printer);
 
   // Copy xxx_default values...
   preset->color_default          = data->color_default;
@@ -296,11 +296,11 @@ papplPrinterSetPresetFromDriver(
     }
   }
 
-  printer->config_time = time(NULL);
+  // printer->config_time = time(NULL);
 
-  _papplRWUnlock(printer);
+  // _papplRWUnlock(printer);
 
-  _papplSystemConfigChanged(printer->system);
+  // _papplSystemConfigChanged(printer->system);
 
   return (true);
 }
