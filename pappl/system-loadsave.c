@@ -750,119 +750,155 @@ papplSystemSavePreset(
 
       //variables ..
       int preset_file_descriptor_int;
-      cups_file_t *fp;
+      // cups_file_t *fp;
+      FILE *fp;
       int i , count, j;
       char filename[1024];
       char buffer[1024];
       pappl_system_t * system = papplPrinterGetSystem(printer);
 
       preset_file_descriptor_int = papplPrinterOpenFile(printer,filename, sizeof(filename), system->directory, "preset_option", "txt", "w");
-
+      fp = fdopen(preset_file_descriptor_int, "w");
       // convert that into the cups_file_t
 
-      // cups_file_t *fp;
-      if ((fp = cupsFileOpenFd(preset_file_descriptor_int, "w")) == NULL)
-        papplLog(system, PAPPL_LOGLEVEL_ERROR, "Unable to open file in write mode for preset");
+      // // cups_file_t *fp;
+      // if ((fp = cupsFileOpenFd(preset_file_descriptor_int, "w")) == NULL)
+      //   papplLog(system, PAPPL_LOGLEVEL_ERROR, "Unable to open file in write mode for preset");
 
-      close(preset_file_descriptor_int);
+    
       // run a for loop on each preset object in the printer object ..
       
       count = cupsArrayGetCount(printer->presets);
       pappl_pr_preset_data_t * preset;
-      for(i=0 ; i < count; i++)
+
+      // instead of this read from the printer->attrs job-presets-supported attribute that we have created ...
+      ipp_attribute_t *presets;
+      for(presets = ippGetFirstAttribute(printer->attrs); presets; presets = ippGetNextAttribute(printer->attrs))
+      if(!strcasecmp(ippGetName(presets), "job-presets-supported"))
+        break;
+
+      int num_presets = ippGetCount(presets);
+      for(i=0;i< num_presets;i++)
       {
+        printf("The count associated is --> %d \n", i);
+        // grab the preset over here...
+        ipp_t * preset = ippGetCollection(presets, i);
 
-        int num_options = 0;
-        cups_option_t *options = NULL;
 
-        // grab the preset ...
-        preset = cupsArrayGetElement(printer->presets, i);
-        num_options = cupsAddIntegerOption("id", preset->preset_id, num_options, &options);
-        num_options = cupsAddOption("name", preset->name, num_options, &options);
+        // iterate over the preset over here...
+        ipp_attribute_t * preset_iterator;
+        // grab the name over here ...
 
-        write_options(fp, "<Preset", num_options , options);
-        cupsFreeOptions(num_options , options);
-
-        // write the static attributes to the file ...
-
-        if (preset->identify_default)
+        fprintf(fp, "%s\n", "<Preset>");
+        for(preset_iterator = ippGetFirstAttribute(preset); preset_iterator ; preset_iterator = ippGetNextAttribute(preset))
         {
-          cupsFilePrintf(fp, "identify-actions-default %s %d\n", _papplIdentifyActionsString(preset->identify_default) , preset->identify_default_check);
+          // now grab the name and value associated with that setting over here ...
+          char *name;
+          char *value;
+          name = ippGetName(preset_iterator);
+          value = ippGetString(preset_iterator, 0, NULL);
+          fprintf(fp, "%s %s\n", name, value);
+          // printf("In loadsave --> %s and value --> %s\n", name, value);
         }
-
-    if (preset->mode_configured)
-      cupsFilePrintf(fp, "label-mode-configured %d %d\n", preset->mode_configured, preset->mode_configured_check);
-    if (preset->tear_offset_configured)
-      cupsFilePrintf(fp, "label-tear-offset-configured %d %d\n", preset->tear_offset_configured, preset->tear_offset_configured_check);
-
-    write_media_col(fp, "media-col-default", &preset->media_default);
-
-
-    // set the media source stuff ...
-    for (j = 0; j < (int)preset->num_source; j ++)
-    {
-      if (preset->media_ready[j].size_name[0])
-      {
-        char	name[128];		// Attribute name
-
-        snprintf(name, sizeof(name), "media-col-ready%u", (unsigned)j);
-        write_media_col(fp, name, preset->media_ready + j);
+        fprintf(fp, "%s\n", "</Preset>");
       }
-    }
-    cupsFilePrintf(fp, " %d\n", preset->media_default_check);
 
-    if (preset->orient_default)
-      cupsFilePrintf(fp, "orientation-requested-default %s %d\n", ippEnumString("orientation-requested", (int)preset->orient_default) ,preset->orient_default_check);
-    if (preset->bin_default && preset->num_bin > 0)
-      cupsFilePrintf(fp,"output-bin-default %d %d\n", preset->bin_default , preset->bin_default_check);
-    if (preset->color_default)
-      cupsFilePrintf(fp, "print-color-mode-default %s %d\n", _papplColorModeString(preset->color_default),preset->color_default_check);
-    if (preset->content_default)
-      cupsFilePrintf(fp, "print-content-optimize-default %s %d\n", _papplContentString(preset->content_default) ,preset->content_default_check);
-    if (preset->darkness_default)
-      cupsFilePrintf(fp, "print-darkness-default %d %d\n", preset->darkness_default, preset->darkness_default_check);
-    if (preset->quality_default)
-      cupsFilePrintf(fp, "print-quality-default %s %d\n", ippEnumString("print-quality", (int)preset->quality_default) , preset->quality_defualt_check);
-    if (preset->scaling_default)
-      cupsFilePrintf(fp, "print-scaling-default %s %d", _papplScalingString(preset->scaling_default) ,preset->scaling_default_check);
-    if (preset->darkness_configured)
-      cupsFilePrintf(fp, "printer-darkness-configured %d %d\n",  preset->darkness_configured , preset->darkness_configured_check);
-    if (preset->sides_default)
-      cupsFilePrintf(fp, "sides-default %s %d\n", _papplSidesString(preset->sides_default) , preset->sides_default_check);
-    if (preset->x_default)
-      cupsFilePrintf(fp, "printer-resolution-default %dx%ddpi %d\n", preset->x_default, preset->y_default , preset->x_default_check);
+
+//       for(i=0 ; i < count; i++)
+//       {
+//           // fprintf(fp, "%s" "Ankit is here\n");
+//         int num_options = 0;
+//         cups_option_t *options = NULL;
+
+//         // grab the preset ...
+//         preset = cupsArrayGetElement(printer->presets, i);
+//         num_options = cupsAddIntegerOption("id", preset->preset_id, num_options, &options);
+//         num_options = cupsAddOption("name", preset->name, num_options, &options);
+
+//         write_options(fp, "<Preset", num_options , options);
+//         cupsFreeOptions(num_options , options);
+
+//         // write the static attributes to the file ...
+
+//         if (preset->identify_default)
+//         {
+//           fprintf(fp, "identify-actions-default %s %d\n", _papplIdentifyActionsString(preset->identify_default) , preset->identify_default_check);
+//         }
+
+//     if (preset->mode_configured)
+//       fprintf(fp, "label-mode-configured %d %d\n", preset->mode_configured, preset->mode_configured_check);
+//     if (preset->tear_offset_configured)
+//       fprintf(fp, "label-tear-offset-configured %d %d\n", preset->tear_offset_configured, preset->tear_offset_configured_check);
+
+//     write_media_col(fp, "media-col-default", &preset->media_default);
+
+
+//     // set the media source stuff ...
+//     for (j = 0; j < (int)preset->num_source; j ++)
+//     {
+//       if (preset->media_ready[j].size_name[0])
+//       {
+//         char	name[128];		// Attribute name
+
+//         snprintf(name, sizeof(name), "media-col-ready%u", (unsigned)j);
+//         write_media_col(fp, name, preset->media_ready + j);
+//       }
+//     }
+//     fprintf(fp, " %d\n", preset->media_default_check);
+
+//     if (preset->orient_default)
+//       fprintf(fp, "orientation-requested-default %s %d\n", ippEnumString("orientation-requested", (int)preset->orient_default) ,preset->orient_default_check);
+//     if (preset->bin_default && preset->num_bin > 0)
+//       fprintf(fp,"output-bin-default %d %d\n", preset->bin_default , preset->bin_default_check);
+//     if (preset->color_default)
+//       fprintf(fp, "print-color-mode-default %s %d\n", _papplColorModeString(preset->color_default),preset->color_default_check);
+//     if (preset->content_default)
+//       fprintf(fp, "print-content-optimize-default %s %d\n", _papplContentString(preset->content_default) ,preset->content_default_check);
+//     if (preset->darkness_default)
+//       fprintf(fp, "print-darkness-default %d %d\n", preset->darkness_default, preset->darkness_default_check);
+//     if (preset->quality_default)
+//       fprintf(fp, "print-quality-default %s %d\n", ippEnumString("print-quality", (int)preset->quality_default) , preset->quality_defualt_check);
+//     if (preset->scaling_default)
+//       fprintf(fp, "print-scaling-default %s %d", _papplScalingString(preset->scaling_default) ,preset->scaling_default_check);
+//     if (preset->darkness_configured)
+//       fprintf(fp, "printer-darkness-configured %d %d\n",  preset->darkness_configured , preset->darkness_configured_check);
+//     if (preset->sides_default)
+//       fprintf(fp, "sides-default %s %d\n", _papplSidesString(preset->sides_default) , preset->sides_default_check);
+//     if (preset->x_default)
+//       fprintf(fp, "printer-resolution-default %dx%ddpi %d\n", preset->x_default, preset->y_default , preset->x_default_check);
    
    
-    // static attributes are done ...
+//     // static attributes are done ...
 
-    // now the vendor options...
-    for (j = 0; j < (int)printer->driver_data.num_vendor; j ++)
-    {
-      char	defname[128],		// xxx-default name
-	      	defvalue[1024];		// xxx-default value
+//     // now the vendor options...
+//     for (j = 0; j < (int)printer->driver_data.num_vendor; j ++)
+//     {
+//       char	defname[128],		// xxx-default name
+// 	      	defvalue[1024];		// xxx-default value
 
-      snprintf(defname, sizeof(defname), "%s-default", printer->driver_data.vendor[j]);
-      ipp_attribute_t * def =  ippFindAttribute(preset->driver_attrs, defname, IPP_TAG_ZERO);
-      // ippAttributeString(ippFindAttribute(preset->driver_attrs, defname, IPP_TAG_ZERO), defvalue, sizeof(defvalue));
-      // printf("The defname is ---> %s , %s\n", defname, defvalue);
-      if(def)
-      {
-        ippAttributeString(def, defvalue, sizeof(defvalue));
-        cupsFilePrintf(fp, "%s %s %d\n", defname, defvalue ,preset->is_vendor[j]);
-      }
-      else 
-      {
-        printf("average\n");
-        ippAttributeString(ippFindAttribute(printer->driver_attrs, defname, IPP_TAG_ZERO), defvalue, sizeof(defvalue));
-        cupsFilePrintf(fp, "%s %s %d\n", defname,  defvalue , preset->is_vendor[j]);
-      }
-    }
- cupsFilePuts(fp, "</Preset>\n");
+//       snprintf(defname, sizeof(defname), "%s-default", printer->driver_data.vendor[j]);
+//       ipp_attribute_t * def =  ippFindAttribute(preset->driver_attrs, defname, IPP_TAG_ZERO);
+//       // ippAttributeString(ippFindAttribute(preset->driver_attrs, defname, IPP_TAG_ZERO), defvalue, sizeof(defvalue));
+//       // printf("The defname is ---> %s , %s\n", defname, defvalue);
+//       if(def)
+//       {
+//         ippAttributeString(def, defvalue, sizeof(defvalue));
+//         fprintf(fp, "%s %s %d\n", defname, defvalue ,preset->is_vendor[j]);
+//       }
+//       else 
+//       {
+//         printf("average\n");
+//         ippAttributeString(ippFindAttribute(printer->driver_attrs, defname, IPP_TAG_ZERO), defvalue, sizeof(defvalue));
+//         fprintf(fp, "%s %s %d\n", defname,  defvalue , preset->is_vendor[j]);
+//       }
+//     }
+//  cupsFilePuts(fp, "</Preset>\n");
 
-      }
+//       }
 
-  cupsFileClose(fp);
-
+  // cupsFileClose(fp);
+  fclose(fp);
+  close(preset_file_descriptor_int);
   return true;
       
 }
