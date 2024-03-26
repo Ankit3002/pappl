@@ -2368,7 +2368,7 @@ void _papplPrinterPresetEdit(
 
 
           
-                for(presets = ippGetFirstAttribute(resource_data->printer->attrs); presets; presets = ippGetNextAttribute(resource_data->printer->attrs))
+          for(presets = ippGetFirstAttribute(resource_data->printer->attrs); presets; presets = ippGetNextAttribute(resource_data->printer->attrs))
           if(!strcasecmp(ippGetName(presets), "job-presets-supported"))
             break;
 
@@ -2399,9 +2399,15 @@ void _papplPrinterPresetEdit(
 
     cupsFreeOptions(num_form, form);
   }
-  else
-  {
-      // cups_option_t * check_form = NULL;
+  // else
+  // {
+  //     // cups_option_t * check_form = NULL;
+
+
+  //     // you have the name of the preset over here .. print it .... 
+  //     // char * name_from_/form = cupsGetOption("name", len, check_form);
+
+  // }
       len = (cups_len_t)papplClientGetForm(client, &check_form);
       // oht = cupsGetOption("name", len, check_form);
       if(check_form != NULL)
@@ -2409,13 +2415,49 @@ void _papplPrinterPresetEdit(
         for(presets = ippGetFirstAttribute(resource_data->printer->attrs); presets; presets = ippGetNextAttribute(resource_data->printer->attrs))
           if(!strcasecmp(ippGetName(presets), "job-presets-supported"))
             break;
-        // preset_counter = ippGetCount(presets);
+        preset_counter = ippGetCount(presets);
       }
+
+
+  // you get the presets over here ...
+  // printf("the preset that you have is  -->%s and number of presets --> %d\n", cupsGetOption("name", len, check_form), preset_counter);
+  preset_name = cupsGetOption("name", len, check_form);
+  // printf("the name of the preset from the edit pag e... -- %s\n", preset_name);
+  ipp_t * curr_preset;
+  bool flag = false;
+  // grab the preset from the dataset ...
+  for(preset_iterator = 0;preset_iterator < preset_counter; preset_iterator++)
+  {
+    if(flag)
+      break;
+    // curr preset ...
+    curr_preset = ippGetCollection(presets, preset_iterator);
+    // take out the name from the preset ...
+    ipp_attribute_t *attributes_iterator;
+    for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+    {
+      // write the logic to fetch the name of the preset ...
+      if(!strcasecmp(ippGetName(attributes_iterator), "preset_name"))
+      {
+        if(!strcasecmp(ippGetString(attributes_iterator, 0, NULL), preset_name))
+        {
+          flag = true;
+      // printf("The amabani --> %s\n", ippGetString(attributes_iterator, 0, NULL));
+          break;
+        }
+      }
+        // break;
+    }
   }
+  // print the content ...
 
+
+
+
+  // curr preset is the preset that we have ...
+  ipp_attribute_t *attributes_iterator;
+  // now you have the right preset with you... now manipulate the whole web page with this ...
   papplClientHTMLPrinterHeader(client, printer, _PAPPL_LOC("Let's Edit your preset over here..."), 0, NULL, NULL);
-
-
 
   if (status)
   {
@@ -2480,17 +2522,23 @@ void _papplPrinterPresetEdit(
   // add preset count over here ...
     papplClientHTMLPrintf(client, " <input type=\"hidden\" name=\"old_preset_count\" value=%d> ", preset_count);
 
-
+  bool flag_attributes = false;
   // orientation-requested-default
+  for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  {
+    if(!strcasecmp(ippGetName(attributes_iterator), "orientation-requested-default"))
+      flag_attributes = true;
+  }
 
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "orientation-requested"));
-  if(iterator_preset->orient_default_check)
+  if(flag_attributes)
   {
     papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"orientation-requested-checkbox\" checked >");
     for (i = IPP_ORIENT_PORTRAIT; i <= IPP_ORIENT_NONE; i ++)
     {
       papplClientHTMLPrintf(client, "<label class=\"image\"><input type=\"radio\" name=\"orientation-requested\" value=\"%d\"%s> <img src=\"data:image/svg+xml,%s\" alt=\"%s\"></label> ", i, iterator_preset->orient_default == (ipp_orient_t)i ? " checked" : "", orient_svgs[i - IPP_ORIENT_PORTRAIT], orients[i - IPP_ORIENT_PORTRAIT]);
     }
+    flag_attributes = false;
   }
   else
   {
@@ -2499,7 +2547,6 @@ void _papplPrinterPresetEdit(
     {
       papplClientHTMLPrintf(client, "<label class=\"image\"><input type=\"radio\" disabled name=\"orientation-requested\" value=\"%d\"%s> <img src=\"data:image/svg+xml,%s\" alt=\"%s\"></label> ", i, iterator_preset->orient_default == (ipp_orient_t)i ? " checked" : "", orient_svgs[i - IPP_ORIENT_PORTRAIT], orients[i - IPP_ORIENT_PORTRAIT]);
     }
-
   } 
 
 
@@ -2507,8 +2554,14 @@ void _papplPrinterPresetEdit(
   papplClientHTMLPuts(client, "</td></tr>\n");
 
   // print-color-mode-default
+  for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  {
+    if(!strcasecmp(ippGetName(attributes_iterator), "print-color-mode-default"))
+      flag_attributes = true;
+  }
+
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-color-mode"));
-  if(iterator_preset->color_default_check)
+  if(flag_attributes)
   {
     papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"print-color-mode-checkbox\" checked >");
     if (data.color_supported == (PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_MONOCHROME) || data.color_supported == (PAPPL_COLOR_MODE_AUTO | PAPPL_COLOR_MODE_MONOCHROME | PAPPL_COLOR_MODE_AUTO_MONOCHROME))
@@ -2526,6 +2579,7 @@ void _papplPrinterPresetEdit(
         }
       }
     }
+    flag_attributes = false;
   }
   else
   {
@@ -2555,7 +2609,14 @@ void _papplPrinterPresetEdit(
   {
     // sides-default
     papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "sides"));
-    if(iterator_preset->sides_default_check)
+    for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+    {
+      if(!strcasecmp(ippGetName(attributes_iterator), "sides-default"))
+        flag_attributes = true;
+    }
+
+
+    if(flag_attributes)
     {
       papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"sides-checkbox\" checked >");
       for (i = PAPPL_SIDES_ONE_SIDED; i <= PAPPL_SIDES_TWO_SIDED_SHORT_EDGE; i *= 2)
@@ -2566,6 +2627,7 @@ void _papplPrinterPresetEdit(
     papplClientHTMLPrintf(client, "<label><input type=\"radio\" name=\"sides\"  value=\"%s\"%s> %s</label> ", keyword, (pappl_sides_t)i == iterator_preset->sides_default ? " checked" : "", localize_keyword(client, "sides", keyword, text, sizeof(text)));
         }
       }
+      flag_attributes = false;
     }
     else
     {
@@ -2589,10 +2651,19 @@ void _papplPrinterPresetEdit(
     papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "output-bin"));
     if (iterator_preset->num_bin > 1)
     {
-      if(iterator_preset->bin_default_check)
+
+      for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+      {
+        if(!strcasecmp(ippGetName(attributes_iterator), "output-bin-default"))
+          flag_attributes = true;
+      }
+
+
+      if(flag_attributes)
       {
         papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"output-bin-checkbox\" checked >");
         papplClientHTMLPuts(client, "<select name=\"output-bin\" >");
+        flag_attributes = false;
       }
       else
       {
@@ -2612,7 +2683,15 @@ void _papplPrinterPresetEdit(
 
   // print-quality-default
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-quality"));
-  if(iterator_preset->quality_defualt_check)
+
+  for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  {
+    if(!strcasecmp(ippGetName(attributes_iterator), "print-quality-default"))
+      flag_attributes = true;
+  }
+
+
+  if(flag_attributes)
   {
     papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"print-quality-checkbox\" checked >");
     for (i = IPP_QUALITY_DRAFT; i <= IPP_QUALITY_HIGH; i ++)
@@ -2620,6 +2699,7 @@ void _papplPrinterPresetEdit(
       keyword = ippEnumString("print-quality", i);
       papplClientHTMLPrintf(client, "<label><input type=\"radio\" name=\"print-quality\"  value=\"%s\"%s> %s</label> ", keyword, (ipp_quality_t)i == iterator_preset->quality_default ? " checked" : "", localize_keyword(client, "print-quality", keyword, text, sizeof(text)));
     }
+    flag_attributes = false;
   }
   else
   {
@@ -2636,10 +2716,18 @@ void _papplPrinterPresetEdit(
   if (data.darkness_supported)
   {
     papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-darkness"));
-    if(iterator_preset->darkness_configured_check)
+
+    for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+    {
+      if(!strcasecmp(ippGetName(attributes_iterator), "print-darkness"))
+        flag_attributes = true;
+    }
+
+    if(flag_attributes)
     {
       papplClientHTMLPrintf(client, " <input type=\"checkbox\" id=\"print-darkness-checkbox\" checked >");
       papplClientHTMLPrintf(client, "<select name=\"print-darkness\">");
+      flag_attributes = false;
     }
     else
     {
@@ -2660,7 +2748,14 @@ void _papplPrinterPresetEdit(
   if (data.speed_supported[1])
   {
     papplClientHTMLPrintf(client, "              <tr><th>%s:</th>", papplClientGetLocString(client, "print-speed"), papplClientGetLocString(client, _PAPPL_LOC("Auto")));
-    if(iterator_preset->speed_defualt_check)
+    for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+    {
+      if(!strcasecmp(ippGetName(attributes_iterator), "print-speed-default"))
+        flag_attributes = true;
+    }
+
+
+    if(flag_attributes)
     {
       papplClientHTMLPrintf(client, " <input type=\"checkbox\" id=\"print-speed-checkbox\" checked>");
       for (i = data.speed_supported[0]; i <= data.speed_supported[1]; i += 2540)
@@ -2671,6 +2766,7 @@ void _papplPrinterPresetEdit(
     papplClientHTMLPrintf(client, "<option value=\"%d\"%s>%s</option>", i / 2540, i == iterator_preset->speed_default ? " selected" : "", text);
         }
       }
+      flag_attributes = false;
     }
     else
     {
@@ -2691,10 +2787,18 @@ void _papplPrinterPresetEdit(
 
   // print-content-optimize-default
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th> <td>", papplClientGetLocString(client, "print-content-optimize"));
-  if(iterator_preset->content_default_check)
+  for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  {
+    if(!strcasecmp(ippGetName(attributes_iterator), "print-content-optimize-default"))
+      flag_attributes = true;
+  }
+
+
+  if(flag_attributes)
   {
     papplClientHTMLPrintf(client, " <input type=\"checkbox\" id=\"print-content-optimize-checkbox\" checked >");
     papplClientHTMLPrintf(client, "<select name=\"print-content-optimize\">");
+    flag_attributes = false;
   }
   else
   {
@@ -2711,10 +2815,18 @@ void _papplPrinterPresetEdit(
 
   // print-scaling-default
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-scaling"));
-  if(iterator_preset->scaling_default_check)
+  for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  {
+    if(!strcasecmp(ippGetName(attributes_iterator), "print-scaling-default"))
+      flag_attributes = true;
+  }
+
+
+  if(flag_attributes)
   {
     papplClientHTMLPrintf(client, "  <input type=\"checkbox\"  id=\"print-scaling-checkbox\" checked >");
     papplClientHTMLPrintf(client, "<select name=\"print-scaling\">");
+    flag_attributes = false;
 
   }
   else
@@ -2732,7 +2844,13 @@ void _papplPrinterPresetEdit(
 
   // printer-resolution-default
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "printer-resolution"));
-  if(iterator_preset->x_default_check && iterator_preset->y_default_check)
+  for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  {
+    if(!strcasecmp(ippGetName(attributes_iterator), "printer-resolution-default"))
+      flag_attributes = true;
+  }
+
+  if(flag_attributes)
   {
     papplClientHTMLPrintf(client, " <input type=\"checkbox\" id=\"printer-resolution-checkbox\" checked>");
     if (data.num_resolution == 1)
@@ -2756,6 +2874,8 @@ void _papplPrinterPresetEdit(
       }
       papplClientHTMLPuts(client, "</select>");
     }
+
+    flag_attributes = false;
   }
   else
   {
@@ -2792,8 +2912,6 @@ void _papplPrinterPresetEdit(
 
 
 
-
-
   // Vendor options
   _papplRWLockRead(printer);
 
@@ -2827,17 +2945,23 @@ void _papplPrinterPresetEdit(
       defvalue[0] = '\0';
 
     papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, data.vendor[i]));
+
+    for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+    {
+      if(!strcasecmp(ippGetName(attributes_iterator), data.vendor[i]))
+        flag_attributes = true;
+    }
+
+
     snprintf(buffer, sizeof(buffer), "%s-checkbox", data.vendor[i]);
 
-    if(iterator_preset->is_vendor[i])
+    if(flag_attributes)
     {
       papplClientHTMLPrintf(client, "  <input type=\"checkbox\" checked id=\"%s\" >", buffer);
     }
     else
     {
       papplClientHTMLPrintf(client, "  <input type=\"checkbox\"  id=\"%s\" >", buffer);
-
-
     }
 
 
@@ -2849,17 +2973,20 @@ void _papplPrinterPresetEdit(
       switch (ippGetValueTag(supattr))
       {
         case IPP_TAG_BOOLEAN :
-            if(iterator_preset->is_vendor[i])
+            if(flag_attributes)
+            {
               papplClientHTMLPrintf(client, "<input type=\"checkbox\" name=\"%s\"%s>", data.vendor[i], !strcmp(defvalue, "true") ? " checked" : "");
+              flag_attributes = false;
+            }
             else 
               papplClientHTMLPrintf(client, "<input type=\"checkbox\" disabled name=\"%s\"%s>", data.vendor[i], !strcmp(defvalue, "true") ? " checked" : "");
             break;
 
         case IPP_TAG_INTEGER :
-            if(iterator_preset->is_vendor[i])
+            if(flag_attributes)
             {
               papplClientHTMLPrintf(client, "<select name=\"%s\">", data.vendor[i]);
-
+              flag_attributes = false;
             }
             else
             {
@@ -2880,8 +3007,12 @@ void _papplPrinterPresetEdit(
             {
               int upper, lower = ippGetRange(supattr, 0, &upper);
 					// Range
-            if(iterator_preset->is_vendor[i])
+            if(flag_attributes)
+            {
+
 	            papplClientHTMLPrintf(client, "<input type=\"number\" name=\"%s\" min=\"%d\" max=\"%d\" value=\"%s\">", data.vendor[i], lower, upper, defvalue);
+              flag_attributes=false;
+            }
             else
 	      papplClientHTMLPrintf(client, "<input type=\"number\" disabled name=\"%s\" min=\"%d\" max=\"%d\" value=\"%s\">", data.vendor[i], lower, upper, defvalue);
 
@@ -2889,8 +3020,11 @@ void _papplPrinterPresetEdit(
             break;
 
         case IPP_TAG_KEYWORD :
-            if(iterator_preset->is_vendor[i])
+            if(flag_attributes)
+            {
               papplClientHTMLPrintf(client, "<select  name=\"%s\">", data.vendor[i]);
+              flag_attributes = false;
+            }
             else
               papplClientHTMLPrintf(client, "<select disabled name=\"%s\">", data.vendor[i]);
             for (j = 0; j < count; j ++)
@@ -2909,9 +3043,11 @@ void _papplPrinterPresetEdit(
     }
     else
     {
-      if(iterator_preset->is_vendor[i])
+      if(flag_attributes)
+      {
         papplClientHTMLPrintf(client, "<input type=\"text\" name=\"%s\" value=\"%s\">", data.vendor[i], defvalue);
-
+        flag_attributes = false;
+      }
       else
         papplClientHTMLPrintf(client, "<input type=\"text\" disabled name=\"%s\" value=\"%s\">", data.vendor[i], defvalue);
     }
