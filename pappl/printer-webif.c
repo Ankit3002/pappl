@@ -2098,6 +2098,56 @@ ipp_t** funct(ipp_attribute_t* presets, ipp_t *new_preset, const char *preset_na
   return preset_array;
 }
 
+
+//
+// 'parse_media_col()' - Parse a media-col value.
+//
+
+static void
+parse_media_col(
+    char              *value,		// I - Value
+    pappl_media_col_t *media)		// O - Media collection
+{
+  cups_len_t	i,			// Looping var
+		num_options;		// Number of options
+  cups_option_t	*options = NULL,	// Options
+		*option;		// Current option
+
+
+  memset(media, 0, sizeof(pappl_media_col_t));
+  num_options = cupsParseOptions(value, 0, &options);
+
+  for (i = num_options, option = options; i > 0; i --, option ++)
+  {
+    if (!strcasecmp(option->name, "bottom"))
+      media->bottom_margin = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "left"))
+      media->left_margin = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "left-offset"))
+      media->left_offset = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "right"))
+      media->right_margin = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "name"))
+      papplCopyString(media->size_name, option->value, sizeof(media->size_name));
+    else if (!strcasecmp(option->name, "width"))
+      media->size_width = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "length"))
+      media->size_length = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "source"))
+      papplCopyString(media->source, option->value, sizeof(media->source));
+    else if (!strcasecmp(option->name, "top"))
+      media->top_margin = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "offset") || !strcasecmp(option->name, "top-offset"))
+      media->top_offset = (int)strtol(option->value, NULL, 10);
+    else if (!strcasecmp(option->name, "tracking"))
+      media->tracking = _papplMediaTrackingValue(option->value);
+    else if (!strcasecmp(option->name, "type"))
+      papplCopyString(media->type, option->value, sizeof(media->type));
+  }
+
+  cupsFreeOptions(num_options, options);
+}
+
 //
 // '_papplPrinterPresetEdit' - Show the Preset Edit Web Page.
 //
@@ -2155,11 +2205,8 @@ void _papplPrinterPresetEdit(
 
   // checking whether we have authorized client or not ....
 
-  // if (!papplClientHTMLAuthorize(client))
-  //   return;
-
-  // pappl_printer_t * printer = resource_data->printer;
-  // const char *preset_name = resource_data->preset_name;
+  if (!papplClientHTMLAuthorize(client))
+    return;
 
 
   // get all the driver data over here ...
@@ -2169,12 +2216,7 @@ void _papplPrinterPresetEdit(
   int preset_iterator , preset_count;
   // preset_count = cupsArrayGetCount(printer->presets);
   pappl_pr_preset_data_t * iterator_preset;
-  // for(preset_iterator = 0;preset_iterator < preset_count; preset_iterator++)
-  // {
-  //   iterator_preset = cupsArrayGetElement(printer->presets, preset_iterator);
-  //   if(!strcasecmp(iterator_preset->name , preset_name))
-  //     break;
-  // }
+
 
   
   if (client->operation == HTTP_STATE_POST)
@@ -2219,7 +2261,7 @@ void _papplPrinterPresetEdit(
 
       if((value = cupsGetOption("preset_name", num_form , form)) != NULL)
       {
-        iterator_preset->name = strdup(value);
+        // iterator_preset->name = strdup(value);
         ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "preset_name", NULL, strdup(value));
       }
       
@@ -2228,61 +2270,61 @@ void _papplPrinterPresetEdit(
       {
                 ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "orientation-requested-default", NULL,ippEnumString("orientation-requested", (int)(ipp_orient_t)strtol(value, &end, 10)) );
 
-        iterator_preset->orient_default_check = true;
-        iterator_preset->orient_default = (ipp_orient_t)strtol(value, &end, 10);
+        // iterator_preset->orient_default_check = true;
+        // iterator_preset->orient_default = (ipp_orient_t)strtol(value, &end, 10);
 
-        if (errno == ERANGE || *end || iterator_preset->orient_default < IPP_ORIENT_PORTRAIT || iterator_preset->orient_default > IPP_ORIENT_NONE)
-          iterator_preset->orient_default = IPP_ORIENT_PORTRAIT;
+        // if (errno == ERANGE || *end || iterator_preset->orient_default < IPP_ORIENT_PORTRAIT || iterator_preset->orient_default > IPP_ORIENT_NONE)
+        //   iterator_preset->orient_default = IPP_ORIENT_PORTRAIT;
       }
 
       if ((value = cupsGetOption("output-bin", num_form, form)) != NULL)
       {
                 ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "output-bin-default", NULL, value );
 
-        iterator_preset->bin_default_check = true;
-        for (i = 0; i < iterator_preset->num_bin; i ++)
-        {
-          if (!strcmp(iterator_preset->bin[i], value))
-          {
-            iterator_preset->bin_default = i;
-            break;
-          }
-	}
+  //       iterator_preset->bin_default_check = true;
+  //       for (i = 0; i < iterator_preset->num_bin; i ++)
+  //       {
+  //         if (!strcmp(iterator_preset->bin[i], value))
+  //         {
+  //           iterator_preset->bin_default = i;
+  //           break;
+  //         }
+	// }
       }
 
       if ((value = cupsGetOption("print-color-mode", num_form, form)) != NULL)
       {
                         ippAddString(col, IPP_TAG_PRINTER,IPP_TAG_KEYWORD, "print-color-mode-default", NULL,
                              _papplColorModeString(_papplColorModeValue(value)));
-        iterator_preset->color_default_check = true;
-        iterator_preset->color_default = _papplColorModeValue(value);
+        // iterator_preset->color_default_check = true;
+        // iterator_preset->color_default = _papplColorModeValue(value);
       }
 
       if ((value = cupsGetOption("print-content-optimize", num_form, form)) != NULL)
       {
                         ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-content-optimize-default",NULL,
                              _papplContentString(_papplContentValue(value)));
-        iterator_preset->content_default_check = true;
-        iterator_preset->content_default = _papplContentValue(value);
+        // iterator_preset->content_default_check = true;
+        // iterator_preset->content_default = _papplContentValue(value);
       }
 
       if ((value = cupsGetOption("print-darkness", num_form, form)) != NULL)
       {
               ippAddInteger(col,IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-darkness-configured", (int)strtol(value, &end, 10));
 
-        iterator_preset->darkness_configured_check = true;
-        iterator_preset->darkness_configured = (int)strtol(value, &end, 10);
+        // iterator_preset->darkness_configured_check = true;
+        // iterator_preset->darkness_configured = (int)strtol(value, &end, 10);
 
-        if (errno == ERANGE || *end || iterator_preset->darkness_configured < 0 || iterator_preset->darkness_configured > 100)
-          iterator_preset->darkness_configured = 50;
+        // if (errno == ERANGE || *end || iterator_preset->darkness_configured < 0 || iterator_preset->darkness_configured > 100)
+        //   iterator_preset->darkness_configured = 50;
       }
 
       if ((value = cupsGetOption("print-quality", num_form, form)) != NULL)
       {
               ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-quality-default", NULL, ippEnumString("print-quality", (int)(ipp_quality_t)ippEnumValue("print-quality", value)));
 
-        iterator_preset->quality_defualt_check =true;
-        iterator_preset->quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
+        // iterator_preset->quality_defualt_check =true;
+        // iterator_preset->quality_default = (ipp_quality_t)ippEnumValue("print-quality", value);
 
       }
 
@@ -2290,8 +2332,8 @@ void _papplPrinterPresetEdit(
       {
               ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-scaling-default",NULL, _papplScalingString(_papplScalingValue(value)));
 
-        iterator_preset->scaling_default_check = true;
-        iterator_preset->scaling_default = _papplScalingValue(value);
+        // iterator_preset->scaling_default_check = true;
+        // iterator_preset->scaling_default = _papplScalingValue(value);
 
       }
 
@@ -2299,19 +2341,19 @@ void _papplPrinterPresetEdit(
       {
               ippAddInteger(col,IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "print-speed-default", (int)strtol(value, &end, 10) * 2540);
 
-        iterator_preset->speed_defualt_check = true;
-        iterator_preset->speed_default = (int)strtol(value, &end, 10) * 2540;
+        // iterator_preset->speed_defualt_check = true;
+        // iterator_preset->speed_default = (int)strtol(value, &end, 10) * 2540;
 
-        if (errno == ERANGE || *end || iterator_preset->speed_default < 0 || iterator_preset->speed_default > iterator_preset->speed_supported[1])
-          iterator_preset->speed_default = 0;
+        // if (errno == ERANGE || *end || iterator_preset->speed_default < 0 || iterator_preset->speed_default > iterator_preset->speed_supported[1])
+        //   iterator_preset->speed_default = 0;
       }
 
       if ((value = cupsGetOption("sides", num_form, form)) != NULL)
       {
               ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, "sides-default", NULL, _papplSidesString(_papplSidesValue(value)));
 
-        iterator_preset->sides_default_check = true;
-        iterator_preset->sides_default = _papplSidesValue(value);
+        // iterator_preset->sides_default_check = true;
+        // iterator_preset->sides_default = _papplSidesValue(value);
 
       }
 
@@ -2360,9 +2402,9 @@ void _papplPrinterPresetEdit(
 
         else if((value = cupsGetOption(data.vendor[i], num_form, form)) != NULL)
         {          
-          iterator_preset->is_vendor[i] = true;
+          // iterator_preset->is_vendor[i] = true;
           printf("The if value that get changed in form is ---- %s --- %s\n", value , data.vendor[i]);
-          num_vendor = (int)cupsAddOption(data.vendor[i], value, (int)num_vendor, &vendor);
+          // num_vendor = (int)cupsAddOption(data.vendor[i], value, (int)num_vendor, &vendor);
               ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD,data.vendor[i], NULL, value );
 
         }
@@ -2372,8 +2414,8 @@ void _papplPrinterPresetEdit(
         {
             ippAddString(col, IPP_TAG_PRINTER, IPP_TAG_KEYWORD, data.vendor[i], NULL,"false" );
 
-          printf("The else value that get changed in form is ---- %s --- %s\n", value , data.vendor[i]);
-          num_vendor = (int)cupsAddOption(data.vendor[i], "false", (int)num_vendor, &vendor);
+          // printf("The else value that get changed in form is ---- %s --- %s\n", value , data.vendor[i]);
+          // num_vendor = (int)cupsAddOption(data.vendor[i], "false", (int)num_vendor, &vendor);
         }
           
       }
@@ -2401,42 +2443,32 @@ void _papplPrinterPresetEdit(
 
       // printf("working or not\n");
 
-      if (papplPrinterSetPresetsVendor(printer, iterator_preset, num_vendor, vendor))
-        status = _PAPPL_LOC("Changes saved.");
-      else
-        status = _PAPPL_LOC("Bad preset values.");
+      // if (papplPrinterSetPresetsVendor(printer, iterator_preset, num_vendor, vendor))
+      //   status = _PAPPL_LOC("Changes saved.");
+      // else
+      //   status = _PAPPL_LOC("Bad preset values.");
 
       cupsFreeOptions((int)num_vendor, vendor);
     }
 
     cupsFreeOptions(num_form, form);
   }
-  printf("Nadfdkkf\n");
-
-  // else
-  // {
-  //     // cups_option_t * check_form = NULL;
 
 
-  //     // you have the name of the preset over here .. print it .... 
-  //     // char * name_from_/form = cupsGetOption("name", len, check_form);
-
-  // }
-      len = (cups_len_t)papplClientGetForm(client, &check_form);
-      // oht = cupsGetOption("name", len, check_form);
-      if(check_form != NULL)
-      {
-        for(presets = ippGetFirstAttribute(printer->attrs); presets; presets = ippGetNextAttribute(printer->attrs))
-          if(!strcasecmp(ippGetName(presets), "job-presets-supported"))
-            break;
-        preset_counter = ippGetCount(presets);
-      }
+  len = (cups_len_t)papplClientGetForm(client, &check_form);
+  // oht = cupsGetOption("name", len, check_form);
+  if(check_form != NULL)
+  {
+    for(presets = ippGetFirstAttribute(printer->attrs); presets; presets = ippGetNextAttribute(printer->attrs))
+      if(!strcasecmp(ippGetName(presets), "job-presets-supported"))
+        break;
+    preset_counter = ippGetCount(presets);
+  }
 
 
   // you get the presets over here ...
   // printf("the preset that you have is  -->%s and number of presets --> %d\n", cupsGetOption("name", len, check_form), preset_counter);
   preset_name = cupsGetOption("name", len, check_form);
-  // printf("the name of the preset from the edit pag e... -- %s\n", preset_name);
   ipp_t * curr_preset;
   bool flag = false;
 
@@ -2458,16 +2490,14 @@ void _papplPrinterPresetEdit(
         if(!strcasecmp(ippGetString(attributes_iterator, 0, NULL), preset_name))
         {
           flag = true;
-      // printf("The amabani --> %s\n", ippGetString(attributes_iterator, 0, NULL));
           break;
         }
       }
-        // break;
     }
   }
-
   // curr preset is the preset that we have ...
   ipp_attribute_t *attributes_iterator;
+  bool flag_attributes = false;
   // now you have the right preset with you... now manipulate the whole web page with this ...
   papplClientHTMLPrinterHeader(client, printer, _PAPPL_LOC("Let's Edit your preset over here..."), 0, NULL, NULL);
 
@@ -2489,52 +2519,76 @@ void _papplPrinterPresetEdit(
     " <tr> <th><label for=\"printer_name\">%s:</label><br>\n </th>"
     "<td> <input type=\"text\" name=\"preset_name\" placeholder=\"%s\" value=\"%s\" required><br> </td></tr>\n",
     papplClientGetLocString(client, _PAPPL_LOC("Name")),
-    papplClientGetLocString(client, _PAPPL_LOC("Name of Preset")), iterator_preset->name);
-
+    papplClientGetLocString(client, _PAPPL_LOC("Name of Preset")), preset_name);
 
     // media-col-default
-  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "media"));
+  // papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "media"));
+  // //grab the values from the ipp ...
+  // for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  // {
+  //   if(!strcasecmp(ippGetName(attributes_iterator), "media-col-default"))
+  //   {
+  //     flag_attributes = true;
+  //     break;
+  //   }
+  // }
+  // parse_media_col(ippGetString(attributes_iterator, 0, NULL), &driver_data->media_default);
+  
+  // for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  // {
+  //   if(!strncasecmp(ippGetName(attributes_iterator), "media-col-ready", 15))
+  //   {
+  //     int index;
+  //     if ((index = (int)strtol(ippGetName(attributes_iterator) + 15, NULL, 10)) >= 0 && index < PAPPL_MAX_SOURCE)
+	//     parse_media_col(ippGetString(attributes_iterator, 0,NULL), driver_data->media_ready + index);
+  //     flag_attributes = true;
+  //     break;
+  //   }
+  // }
 
-  if (data.num_source > 1)
-  {
-    papplClientHTMLPuts(client, "<select name=\"media-source\">");
 
-    for (i = 0; i < data.num_source; i ++)
-    {
-      // See if any two sources have the same size...
-      for (j = i + 1; j < data.num_source; j ++)
-      {
-        if (iterator_preset->media_ready[i].size_width > 0 && iterator_preset->media_ready[i].size_width == iterator_preset->media_ready[j].size_width && iterator_preset->media_ready[i].size_length == iterator_preset->media_ready[j].size_length)
-        {
-          show_source = true;
-          break;
-        }
-      }
-    }
+  // printf("Again i am here\n");
 
-    for (i = 0; i < data.num_source; i ++)
-    {
-      keyword = data.source[i];
+  // if (data.num_source > 1)
+  // {
+  //   papplClientHTMLPuts(client, "<select name=\"media-source\">");
 
-      if (strcmp(keyword, "manual"))
-      {
-	papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", keyword, !strcmp(keyword, iterator_preset->media_default.source) ? " selected" : "", localize_media(client, iterator_preset->media_ready + i, show_source, text, sizeof(text)));
-      }
-    }
-    papplClientHTMLPuts(client, "</select>");
-  }
-  else
-    papplClientHTMLEscape(client, localize_media(client, iterator_preset->media_ready, false, text, sizeof(text)), 0);
+  //   for (i = 0; i < data.num_source; i ++)
+  //   {
+  //     // See if any two sources have the same size...
+  //     for (j = i + 1; j < data.num_source; j ++)
+  //     {
+  //       if (driver_data->media_ready[i].size_width > 0 && driver_data->media_ready[i].size_width == driver_data->media_ready[j].size_width && driver_data->media_ready[i].size_length == driver_data->media_ready[j].size_length)
+  //       {
+  //         show_source = true;
+  //         break;
+  //       }
+  //     }
+  //   }
 
-  papplClientHTMLPrintf(client, " <a class=\"btn\" href=\"%s/media\">%s</a></td></tr>\n", printer->uriname, papplClientGetLocString(client, _PAPPL_LOC("Configure Media")));
+  //   for (i = 0; i < data.num_source; i ++)
+  //   {
+  //     keyword = data.source[i];
+
+  //     if (strcmp(keyword, "manual"))
+  //     {
+	// papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", keyword, !strcmp(keyword, driver_data->media_default.source) ? " selected" : "", localize_media(client, driver_data->media_ready + i, show_source, text, sizeof(text)));
+  //     }
+  //   }
+  //   papplClientHTMLPuts(client, "</select>");
+  // }
+  // else
+  //   papplClientHTMLEscape(client, localize_media(client, driver_data->media_ready, false, text, sizeof(text)), 0);
+
+
+  // papplClientHTMLPrintf(client, " <a class=\"btn\" href=\"%s/media\">%s</a></td></tr>\n", printer->uriname, papplClientGetLocString(client, _PAPPL_LOC("Configure Media")));
 
   // add old preset-name
-  papplClientHTMLPrintf(client, " <input type=\"hidden\" name=\"old_preset_name\" value=%s> ",iterator_preset->name);
+  papplClientHTMLPrintf(client, " <input type=\"hidden\" name=\"old_preset_name\" value=%s> ",preset_name);
 
   // add preset count over here ...
     papplClientHTMLPrintf(client, " <input type=\"hidden\" name=\"old_preset_count\" value=%d> ", preset_count);
 
-  bool flag_attributes = false;
   // orientation-requested-default
   for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
   {
@@ -2578,7 +2632,7 @@ void _papplPrinterPresetEdit(
     }
 
   }
-
+  printf("till print-color-mode it's working fine\n");
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-color-mode"));
   if(flag_attributes)
   {
@@ -2666,46 +2720,56 @@ void _papplPrinterPresetEdit(
     }
     papplClientHTMLPuts(client, "</td></tr>\n");
   }
+  printf("till sides default it's working fine\n");
 
   // output-bin-default
-  if (iterator_preset->num_bin > 0)
-  {
-    papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "output-bin"));
-    if (iterator_preset->num_bin > 1)
-    {
+  // if (driver_data->num_bin > 0)
+  // {
+  //   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "output-bin"));
+  //   if (driver_data->num_bin > 1)
+  //   {
 
-      for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
-      {
-        if(!strcasecmp(ippGetName(attributes_iterator), "output-bin-default"))
-        {
-           flag_attributes = true;
-           break;
-        }
+  //     for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  //     {
+  //       if(!strcasecmp(ippGetName(attributes_iterator), "output-bin-default"))
+  //       {
+  //          flag_attributes = true;
+  //          break;
+  //       }
 
-      }
+  //     }
+  //   for (i = 0; i < driver_data->num_bin; i ++)
+	//   {
+	//     if (!strcmp(ippGetString(attributes_iterator, 0, NULL), driver_data->bin[i]))
+	//     {
+	//       // printer->driver_data.bin_default = i;
+  //       driver_data->bin_default = i;
+	//       break;
+	//     }
+	//   }
 
 
-      if(flag_attributes)
-      {
-        papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"output-bin-checkbox\" checked >");
-        papplClientHTMLPuts(client, "<select name=\"output-bin\" >");
-        flag_attributes = false;
-      }
-      else
-      {
-        papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"output-bin-checkbox\" >");
-        papplClientHTMLPuts(client, "<select disabled name=\"output-bin\" >");
-      }
-      for (i = 0; i < iterator_preset->num_bin; i ++)
-	papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", iterator_preset->bin[i], i == iterator_preset->bin_default ? " selected" : "", localize_keyword(client, "output-bin", iterator_preset->bin[i], text, sizeof(text)));
-      papplClientHTMLPuts(client, "</select>");
-    }
-    else
-    {
-      papplClientHTMLPrintf(client, "%s", localize_keyword(client, "output-bin", iterator_preset->bin[iterator_preset->bin_default], text, sizeof(text)));
-    }
-    papplClientHTMLPuts(client, "</td></tr>\n");
-  }
+  //     if(flag_attributes)
+  //     {
+  //       papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"output-bin-checkbox\" checked >");
+  //       papplClientHTMLPuts(client, "<select name=\"output-bin\" >");
+  //       flag_attributes = false;
+  //     }
+  //     else
+  //     {
+  //       papplClientHTMLPrintf(client, "  <input type=\"checkbox\" id=\"output-bin-checkbox\" >");
+  //       papplClientHTMLPuts(client, "<select disabled name=\"output-bin\" >");
+  //     }
+  //     for (i = 0; i < driver_data->num_bin; i ++)
+	// papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", driver_data->bin[i], i == driver_data->bin_default ? " selected" : "", localize_keyword(client, "output-bin", driver_data->bin[i], text, sizeof(text)));
+  //     papplClientHTMLPuts(client, "</select>");
+  //   }
+  //   else
+  //   {
+  //     papplClientHTMLPrintf(client, "%s", localize_keyword(client, "output-bin", driver_data->bin[driver_data->bin_default], text, sizeof(text)));
+  //   }
+  //   papplClientHTMLPuts(client, "</td></tr>\n");
+  // }
 
   // print-quality-default
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-quality"));
@@ -2856,7 +2920,6 @@ void _papplPrinterPresetEdit(
 
 
   papplClientHTMLPuts(client, "</select></td></tr>\n");
-
   // print-scaling-default
   papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "print-scaling"));
   for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
@@ -2896,72 +2959,72 @@ void _papplPrinterPresetEdit(
   papplClientHTMLPuts(client, "</select></td></tr>\n");
 
   // printer-resolution-default
-  papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "printer-resolution"));
-  for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
-  {
-    if(!strcasecmp(ippGetName(attributes_iterator), "printer-resolution-default"))
-    {
-      flag_attributes = true;
-      break;
-    }
-  }
+  // papplClientHTMLPrintf(client, "              <tr><th>%s:</th><td>", papplClientGetLocString(client, "printer-resolution"));
+  // for(attributes_iterator = ippGetFirstAttribute(curr_preset); attributes_iterator; attributes_iterator = ippGetNextAttribute(curr_preset))
+  // {
+  //   if(!strcasecmp(ippGetName(attributes_iterator), "printer-resolution-default"))
+  //   {
+  //     flag_attributes = true;
+  //     break;
+  //   }
+  // }
 
-  if(flag_attributes)
-  {
-    papplClientHTMLPrintf(client, " <input type=\"checkbox\" id=\"printer-resolution-checkbox\" checked>");
-    if (data.num_resolution == 1)
-    {
-      if (data.x_resolution[0] != data.y_resolution[0])
-        papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%dx%ddpi")), data.x_resolution[0], data.y_resolution[0]);
-      else
-        papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%ddpi")), data.x_resolution[0]);
-    }
-    else
-    {
-      papplClientHTMLPuts(client, "<select name=\"printer-resolution\">");
-      for (i = 0; i < data.num_resolution; i ++)
-      {
-        if (data.x_resolution[i] != data.y_resolution[i])
-          papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%dx%ddpi"), data.x_resolution[i], data.y_resolution[i]);
-        else
-    papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%ddpi"), data.x_resolution[i]);
+  // if(flag_attributes)
+  // {
+  //   papplClientHTMLPrintf(client, " <input type=\"checkbox\" id=\"printer-resolution-checkbox\" checked>");
+  //   if (data.num_resolution == 1)
+  //   {
+  //     if (data.x_resolution[0] != data.y_resolution[0])
+  //       papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%dx%ddpi")), data.x_resolution[0], data.y_resolution[0]);
+  //     else
+  //       papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%ddpi")), data.x_resolution[0]);
+  //   }
+  //   else
+  //   {
+  //     papplClientHTMLPuts(client, "<select name=\"printer-resolution\">");
+  //     for (i = 0; i < data.num_resolution; i ++)
+  //     {
+  //       if (data.x_resolution[i] != data.y_resolution[i])
+  //         papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%dx%ddpi"), data.x_resolution[i], data.y_resolution[i]);
+  //       else
+  //   papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%ddpi"), data.x_resolution[i]);
 
-        papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", text, (iterator_preset->x_default == data.x_resolution[i] && iterator_preset->y_default == data.y_resolution[i]) ? " selected" : "", text);
-      }
-      papplClientHTMLPuts(client, "</select>");
-    }
+  //       papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", text, (iterator_preset->x_default == data.x_resolution[i] && iterator_preset->y_default == data.y_resolution[i]) ? " selected" : "", text);
+  //     }
+  //     papplClientHTMLPuts(client, "</select>");
+  //   }
 
-    flag_attributes = false;
-  }
-  else
-  {
-    papplClientHTMLPrintf(client, " <input type=\"checkbox\" id=\"printer-resolution-checkbox\" >");
-    if (data.num_resolution == 1)
-    {
-      if (data.x_resolution[0] != data.y_resolution[0])
-        papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%dx%ddpi")), data.x_resolution[0], data.y_resolution[0]);
-      else
-        papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%ddpi")), data.x_resolution[0]);
-    }
-    else
-    {
-      papplClientHTMLPuts(client, "<select disabled name=\"printer-resolution\">");
-      for (i = 0; i < data.num_resolution; i ++)
-      {
-        if (data.x_resolution[i] != data.y_resolution[i])
-          papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%dx%ddpi"), data.x_resolution[i], data.y_resolution[i]);
-        else
-    papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%ddpi"), data.x_resolution[i]);
+  //   flag_attributes = false;
+  // }
+  // else
+  // {
+  //   papplClientHTMLPrintf(client, " <input type=\"checkbox\" id=\"printer-resolution-checkbox\" >");
+  //   if (data.num_resolution == 1)
+  //   {
+  //     if (data.x_resolution[0] != data.y_resolution[0])
+  //       papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%dx%ddpi")), data.x_resolution[0], data.y_resolution[0]);
+  //     else
+  //       papplClientHTMLPrintf(client, papplClientGetLocString(client, _PAPPL_LOC("%ddpi")), data.x_resolution[0]);
+  //   }
+  //   else
+  //   {
+  //     papplClientHTMLPuts(client, "<select disabled name=\"printer-resolution\">");
+  //     for (i = 0; i < data.num_resolution; i ++)
+  //     {
+  //       if (data.x_resolution[i] != data.y_resolution[i])
+  //         papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%dx%ddpi"), data.x_resolution[i], data.y_resolution[i]);
+  //       else
+  //   papplLocFormatString(papplClientGetLoc(client), text, sizeof(text), _PAPPL_LOC("%ddpi"), data.x_resolution[i]);
 
-        papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", text, (iterator_preset->x_default == data.x_resolution[i] && iterator_preset->y_default == data.y_resolution[i]) ? " selected" : "", text);
-      }
-      papplClientHTMLPuts(client, "</select>");
-    }
-  }
+  //       papplClientHTMLPrintf(client, "<option value=\"%s\"%s>%s</option>", text, (iterator_preset->x_default == data.x_resolution[i] && iterator_preset->y_default == data.y_resolution[i]) ? " selected" : "", text);
+  //     }
+  //     papplClientHTMLPuts(client, "</select>");
+  //   }
+  // }
 
 
 
-  papplClientHTMLPuts(client, "</td></tr>\n");
+  // papplClientHTMLPuts(client, "</td></tr>\n");
 
   // papplClientHTMLPrintf(client , "<script> function setupCheckboxSelectInteraction(checkboxId, selectName) { var checkbox = document.getElementById(checkboxId); var selectElement = document.querySelector('select[name=\"' + selectName + '\"]'); if (checkbox && selectElement) { checkbox.addEventListener('change', function() { selectElement.disabled = !checkbox.checked; }); } } function setupCheckboxRadioInteraction(checkboxId, radioName) { var checkbox = document.getElementById(checkboxId); var radioButtons = document.querySelectorAll('input[type=\"radio\"][name=\"' + radioName + '\"]'); if (checkbox && radioButtons.length > 0) { checkbox.addEventListener('change', function() { radioButtons.forEach(function(radioButton) { radioButton.disabled = !checkbox.checked; }); }); } } </script>");
   papplClientHTMLPrintf(client, "<script> function setup_Interaction(checkboxId, inputName) { var types = [\"select\", \"radio\", \"text\", \"number\", \"checkbox\"]; var checkbox = document.getElementById(checkboxId); types.forEach(function (type) { var createdPattern; switch (type) { case \"select\": createdPattern = 'select[name=\"' + inputName + '\"]'; break; case \"radio\": createdPattern = 'input[type=\"radio\"][name=\"' + inputName + '\"]'; break; case \"text\": created_pattern = 'input[type=\"text\"][name=\"' + inputName + '\"]'; case \"number\": created_pattern = 'input[type=\"number\"][name=\"' + inputName + '\"]'; case \"checkbox\": created_pattern = 'input[type=\"checkbox\"][name=\"' + inputName + '\"]'; } console.log(createdPattern); var inputs = document.querySelectorAll(createdPattern); if (checkbox && inputs.length > 0) { checkbox.addEventListener(\"change\", function () { inputs.forEach(function (input) { input.disabled = !checkbox.checked; }); }); } }); } </script>");
